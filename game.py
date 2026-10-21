@@ -70,6 +70,7 @@ class Game:
         self.rules = dict(DEFAULT_RULES)
         self.log = []
         self.forced_dice = []  # test hook: list of (d1, d2)
+        self.roll_id = 0  # bumps on every turn roll so clients can animate repeats
         self.reset_board()
 
     # ------------------------------------------------------------------ setup
@@ -314,6 +315,7 @@ class Game:
         self.require_turn(p, "roll")
         d1, d2 = self.roll_dice()
         self.dice = [d1, d2]
+        self.roll_id += 1
         total = d1 + d2
         doubles = d1 == d2
         self.say(f"{p.name} rolled {d1}+{d2}{' (doubles)' if doubles else ''}.")
@@ -889,7 +891,7 @@ class Game:
             "phase": self.phase, "rules": self.rules,
             "players": [p.public() for p in self.players.values()],
             "order": self.order, "turn": self.order[self.turn] if self.order else None,
-            "stage": self.stage, "dice": self.dice, "doubles": self.doubles, "blocked": self.blocked() if self.phase == "playing" else False,
+            "stage": self.stage, "dice": self.dice, "roll_id": self.roll_id, "doubles": self.doubles, "blocked": self.blocked() if self.phase == "playing" else False,
             "owners": {str(k): v for k, v in self.owners.items()},
             "houses": {str(k): v for k, v in self.houses.items() if v},
             "mortgaged": sorted(self.mortgaged),

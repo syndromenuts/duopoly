@@ -2,7 +2,8 @@
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const DICE = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+// Which cells of a 3x3 grid hold a pip, per die face.
+const PIPS = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
 
 let BOARD = null;
 let S = null; // latest game state
@@ -12,6 +13,8 @@ let myId = localStorage.getItem("duopoly-id") || "";
 let openProp = null; // board position shown in the property dialog
 let tradeDraft = null;
 let joinColor = null;
+let seenRoll = null; // roll_id already shown, so only fresh rolls animate
+let rollingUntil = 0;
 
 // ------------------------------------------------------------------ server
 
@@ -101,6 +104,10 @@ function buildBoard() {
     c.onclick = () => { openProp = i; renderProp(); };
     board.appendChild(c);
   });
+  for (const d of $("dice").children) {
+    d.className = "die";
+    d.innerHTML = "<i></i>".repeat(9);
+  }
 }
 
 function bindStatic() {
@@ -204,14 +211,45 @@ function renderBoard() {
     c.classList.toggle("here", here.some((p) => p.id === S.turn));
   });
   const cur = player(S.turn);
-  let center = `<div class="title">DUOPOLY</div>`;
-  if (S.dice) center += `<div class="dice">${DICE[S.dice[0]]}${DICE[S.dice[1]]}</div>`;
+  renderDice();
+  let center = "";
   if (S.phase === "over") center += `<h2>🏆 ${pname(S.winner)} wins!</h2>${btn("New game", "vote_reset")}`;
   else if (cur) center += `<div><span class="dot" style="background:${cur.color}"></span> <b>${esc(cur.name)}</b>'s turn</div>`;
   if (S.last_card) center += `<div class="cardtxt"><b>${S.last_card.deck === "chance" ? "Chance" : "Community Chest"}</b> (${pname(S.last_card.player)}): ${esc(S.last_card.text)}</div>`;
   center += `<div class="hint">Bank: ${S.bank_houses} houses, ${S.bank_hotels} hotels${S.rules.free_parking ? ` · Free Parking pot $${S.pot}` : ""}</div>`;
   center += `<div class="hint">Click any space for details. Click your own properties to build or mortgage.</div>`;
-  $("center").innerHTML = center;
+  $("center-info").innerHTML = center;
+}
+
+function setDice(a, b) {
+  [a, b].forEach((v, k) => {
+    const die = $("dice").children[k];
+    die.hidden = !v;
+    [...die.children].forEach((pip, i) => pip.classList.toggle("on", PIPS[v].includes(i)));
+  });
+}
+
+function renderDice() {
+  if (seenRoll !== null && S.roll_id !== seenRoll && S.dice) animateDice();
+  seenRoll = S.roll_id;
+  if (Date.now() >= rollingUntil) setDice(...(S.dice || [0, 0]));
+}
+
+function animateDice() {
+  // Enlarge the dice while rolling and for a moment after the result lands.
+  const el = $("dice");
+  el.classList.add("big");
+  clearTimeout(animateDice.shrink);
+  animateDice.shrink = setTimeout(() => el.classList.remove("big"), 2200);
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  rollingUntil = Date.now() + 700;
+  const face = () => 1 + Math.floor(Math.random() * 6);
+  clearInterval(animateDice.timer);
+  animateDice.timer = setInterval(() => {
+    if (Date.now() < rollingUntil) return setDice(face(), face());
+    clearInterval(animateDice.timer);
+    setDice(...(S.dice || [0, 0]));
+  }, 70);
 }
 
 function waitingReason() {
