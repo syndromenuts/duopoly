@@ -264,7 +264,7 @@ function renderMe() {
         const sp = space(m.pos);
         html += `<div>Buy <b>${esc(sp.name)}</b> for $${sp.price}?</div>`;
         html += btn("Buy", "buy", null, "", dis || m.cash < sp.price);
-        html += btn(S.rules.auctions ? "Decline (auction)" : "Decline", "decline", null, "secondary", dis);
+        html += btn("Decline (auction)", "decline", null, "secondary", dis);
         if (m.cash < sp.price) html += `<div class="hint">Not enough cash. You can mortgage or sell to raise it.</div>`;
       } else if (S.stage === "done") {
         html += btn("End turn", "end_turn", null, "", dis);

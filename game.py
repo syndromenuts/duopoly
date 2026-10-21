@@ -12,7 +12,7 @@ import time
 from board import DECKS, GROUPS, JAIL, JAILFREE_INDEX, SPACES
 
 TOKEN_COLORS = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#42d4f4", "#f032e6", "#9a6324"]
-DEFAULT_RULES = {"free_parking": False, "double_go": False, "auctions": True, "start_cash": 1500}
+DEFAULT_RULES = {"free_parking": False, "double_go": False, "start_cash": 1500}
 MAX_PLAYERS = 8
 KICK_AFTER = {"lobby": 15, "playing": 120}
 
@@ -375,13 +375,9 @@ class Game:
 
     def a_decline(self, p, data):
         self.require_turn(p, "buy")
-        if self.rules["auctions"]:
-            self.say(f"{p.name} declined {SPACES[p.pos]['name']}. It goes to auction.")
-            self.stage = "auction"
-            self.start_auction("property", p.pos, from_turn=True)
-        else:
-            self.say(f"{p.name} declined {SPACES[p.pos]['name']}.")
-            self.finish_landing()
+        self.say(f"{p.name} declined {SPACES[p.pos]['name']}. It goes to auction.")
+        self.stage = "auction"
+        self.start_auction("property", p.pos, from_turn=True)
 
     def a_end_turn(self, p, data):
         self.require_turn(p, "done")
@@ -733,8 +729,7 @@ class Game:
             for pos in props:
                 del self.owners[pos]
                 self.mortgaged.discard(pos)
-                if self.rules["auctions"]:
-                    self.auction_queue.append(pos)
+                self.auction_queue.append(pos)
             for kind in p.cards:
                 self.decks[kind].append(JAILFREE_INDEX[kind])
         p.cash = 0

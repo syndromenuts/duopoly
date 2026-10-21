@@ -45,7 +45,7 @@ podman run -d --name duopoly -p 8000:8000 duopoly
   - If you can't pay, you raise money by selling, mortgaging or trading. The debt is paid automatically once you have the cash.
   - If you declare bankruptcy to a player, they get everything you own.
   - If you go bankrupt to the bank, your properties are auctioned.
-- Optional house rules, set in the lobby: Free Parking pot, $400 for landing on GO, auctions off, starting cash.
+- Optional house rules, set in the lobby: Free Parking pot, $400 for landing on GO, starting cash.
 - Players disconnected for 2 minutes can be removed. Removal counts as bankruptcy to the bank. The game can also be ended early if every connected player votes to end it.
 
 ## Tests

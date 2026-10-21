@@ -210,13 +210,6 @@ class Auctions(unittest.TestCase):
         with self.assertRaises(GameError):
             act(g, b, "bid", amount=5000)
 
-    def test_auction_rule_off(self):
-        g, (a, b, c) = new_game(auctions=False)
-        roll(g, a, 1, 2)
-        act(g, a, "decline")
-        self.assertIsNone(g.auction)
-        self.assertEqual(g.stage, "done")
-
     def test_turn_blocked_during_auction(self):
         g, (a, b, c) = new_game()
         roll(g, a, 1, 2)

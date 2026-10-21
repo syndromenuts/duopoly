@@ -118,7 +118,7 @@ def play(seed):
     rng = random.Random(seed)
     g = Game(random.Random(seed))
     n = rng.randint(2, 6)
-    g.rules.update(free_parking=rng.random() < 0.3, double_go=rng.random() < 0.3, auctions=rng.random() < 0.85)
+    g.rules.update(free_parking=rng.random() < 0.3, double_go=rng.random() < 0.3)
     ps = [g.join({"name": f"Bot{i}"}) for i in range(n)]
     for p in ps:
         g.act(p.token, "ready", {"ready": True})
