@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duopoly</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="toast" hidden></div>
+
+<section id="lobby" hidden>
+  <h1>Duopoly</h1>
+  <div id="join-form" class="card" hidden>
+    <h2>Join the game</h2>
+    <form id="join">
+      <input id="join-name" maxlength="20" placeholder="Your name" autocomplete="off" required>
+      <div id="join-colors" class="swatches"></div>
+      <button type="submit">Join</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Players</h2>
+    <ul id="lobby-players" class="plain"></ul>
+    <div id="lobby-me" hidden>
+      <button id="ready-btn"></button>
+      <button id="leave-btn" class="secondary">Leave</button>
+    </div>
+    <p class="hint">The game starts when at least 2 players have joined and everyone is ready.</p>
+  </div>
+  <div class="card">
+    <h2>Rules</h2>
+    <label><input type="checkbox" data-rule="auctions"> Auction properties a player declines to buy (official)</label>
+    <label><input type="checkbox" data-rule="free_parking"> House rule: taxes and fines go to a Free Parking pot</label>
+    <label><input type="checkbox" data-rule="double_go"> House rule: $400 for landing exactly on GO</label>
+    <label>Starting cash $<input id="start-cash" type="number" min="100" max="10000" step="50"></label>
+    <p class="hint">Changing a rule un-readies everyone.</p>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <div id="board"><div id="center"></div></div>
+  <aside id="side">
+    <div id="me" class="card"></div>
+    <div id="auction" class="card" hidden>
+      <div id="auction-info"></div>
+      <div id="auction-controls">
+        <button data-inc="1">+$1</button>
+        <button data-inc="10">+$10</button>
+        <button data-inc="100">+$100</button>
+        <input id="bid-amount" type="number" min="1" placeholder="Amount">
+        <button id="bid-btn">Bid</button>
+        <button id="pass-btn" class="secondary">Pass</button>
+      </div>
+    </div>
+    <div id="trades" class="card"></div>
+    <div id="players" class="card"></div>
+    <div class="card"><h3>Log</h3><ol id="log" class="plain"></ol></div>
+  </aside>
+</section>
+
+<div id="prop-modal" class="modal" hidden><div class="card" id="prop-body"></div></div>
+
+<div id="trade-modal" class="modal" hidden>
+  <div class="card">
+    <h2>Propose a trade</h2>
+    <label>With <select id="trade-partner"></select></label>
+    <div class="trade-cols">
+      <div><h3>You give</h3><div id="trade-give"></div></div>
+      <div><h3>You get</h3><div id="trade-get"></div></div>
+    </div>
+    <button id="trade-send">Send offer</button>
+    <button id="trade-close" class="secondary">Close</button>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
