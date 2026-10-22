@@ -98,7 +98,7 @@ function buildBoard() {
   const board = $("board");
   BOARD.spaces.forEach((sp, i) => {
     const c = document.createElement("div");
-    c.className = "cell" + (i % 10 === 0 ? " corner" : "");
+    c.className = "cell" + (i % 10 === 0 ? " corner" : "") + (sp.type === "go" ? " go" : "");
     c.id = "cell-" + i;
     const [r, col] = cellPlace(i);
     c.style.gridRow = r;
@@ -210,6 +210,7 @@ function renderBoard() {
     if (sp.type === "property") html += `<div class="strip" style="background:${BOARD.colors[sp.group]}"></div>`;
     const icon = { station: "🚉 ", utility: sp.name.startsWith("Power") ? "💡 " : "🚰 ", chance: "❓ ", chest: "📦 ", tax: "💸 " }[sp.type] || "";
     html += `<div class="nm">${icon}${esc(sp.name)}</div>`;
+    if (sp.type === "go") html += `<svg class="arrow" viewBox="2.5 3 20.5 18"><path d="M21 12H5M12 4.5 4.5 12l7.5 7.5"/></svg>`; // play runs leftward from GO
     if (sp.price) html += `<div class="pr">$${sp.price}</div>`;
     if (sp.type === "tax") html += `<div class="pr">pay $${sp.amount}</div>`;
     if (h) html += `<div class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "HOTEL" : "■".repeat(h)}</div>`;

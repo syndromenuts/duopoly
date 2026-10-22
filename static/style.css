@@ -45,6 +45,8 @@ label { display: block; margin: 4px 0; }
 .cell .nm { padding: 1px; font-weight: 600; }
 .cell .pr { color: var(--cell-muted); }
 .cell.corner { justify-content: center; font-weight: 700; font-size: clamp(8px, 1.2vw, 13px); }
+.cell.go { background: #2e9e4f; color: #fff; font-size: clamp(11px, 1.8vw, 20px); letter-spacing: 1px; }
+.cell.go .arrow { width: 50%; height: auto; margin-top: 12%; transform: translateY(-10%); flex: none; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .cell .owner { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; }
 .cell.mort { background: repeating-linear-gradient(45deg, var(--cell), var(--cell) 5px, var(--mort) 5px, var(--mort) 10px); }
 .cell .bld { color: var(--build); font-weight: 700; letter-spacing: -1px; }
