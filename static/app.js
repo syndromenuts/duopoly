@@ -199,6 +199,21 @@ function renderLobby() {
 const JAIL_BARS = `<svg class="bars" viewBox="0 0 40 40"><path d="M6.75 0v40M15 0v40M23.25 0v40"/>
   <rect class="lock" x="30" y="15" width="10" height="12" rx="1.5"/><path class="keyhole" d="M35 18.5a1.8 1.8 0 1 1 0 3.6a1.8 1.8 0 1 1 0-3.6M34.2 21.5h1.6l.6 3.5h-2.8z"/></svg>`;
 
+// Where inmates stand in the box, as % of its width: up to 3 to a row, clear of the lock plate, the
+// first two in the gaps between bars. Rows are added as the cell fills (8 players need 3, at the y's below).
+const JAIL_SLOTS = [[47.8], [27.2, 47.8], [12, 37, 62]];
+const JAIL_ROWS = [[50], [32, 68], [20, 50, 80]];
+function inmateDots(jailed) {
+  const nRows = Math.ceil(jailed.length / 3), rows = [];
+  for (let r = 0, i = 0; r < nRows; r++) {
+    const k = Math.ceil((jailed.length - i) / (nRows - r));
+    rows.push(jailed.slice(i, i += k));
+  }
+  return rows.map((row, r) => row.map((p, j) =>
+    `<span class="dot" style="background:${p.color};left:${JAIL_SLOTS[row.length - 1][j]}%;top:${JAIL_ROWS[nRows - 1][r]}%" title="${esc(p.name)}"></span>`
+  ).join("")).join("");
+}
+
 function renderBoard() {
   if (!revealed) revealed = new Set(S.drawn.map((c) => c.id)); // cards drawn before we connected skip the show
   if (seenRoll !== null && S.roll_id !== seenRoll && S.dice) {
@@ -216,9 +231,7 @@ function renderBoard() {
     const icon = { station: "🚉 ", utility: sp.name.startsWith("Power") ? "💡 " : "🚰 ", chance: "❓ ", chest: "📦 ", tax: "💸 " }[sp.type] || "";
     if (sp.type === "jail") {
       // Jailed players sit inside the cell, behind the bars; visitors stay in the L outside the box.
-      const jailed = here.filter((p) => p.in_jail);
-      const inmates = jailed.map((p) => `<span class="dot" style="background:${p.color}" title="${esc(p.name)}"></span>`).join("");
-      html += `<div class="jailbox"><div class="inmates">${inmates}</div>${JAIL_BARS}</div>`;
+      html += `<div class="jailbox"><div class="inmates">${inmateDots(here.filter((p) => p.in_jail))}</div>${JAIL_BARS}</div>`;
     } else html += `<div class="nm">${icon}${esc(sp.name)}</div>`;
     if (sp.type === "go") html += `<svg class="arrow" viewBox="2.5 3 20.5 18"><path d="M21 12H5M12 4.5 4.5 12l7.5 7.5"/></svg>`; // play runs leftward from GO
     if (sp.price) html += `<div class="pr">$${sp.price}</div>`;
