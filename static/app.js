@@ -16,6 +16,7 @@ let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
 let rollingUntil = 0;
 let moving = null; // id of the player whose token is animating along the board
+let revealed = null; // ids of drawn cards that have reached their deck (null until the first state)
 
 // ------------------------------------------------------------------ server
 
@@ -194,9 +195,10 @@ function renderLobby() {
 }
 
 function renderBoard() {
+  if (!revealed) revealed = new Set(S.drawn.map((c) => c.id)); // cards drawn before we connected skip the show
   if (seenRoll !== null && S.roll_id !== seenRoll && S.dice) {
     animateDice();
-    animateMoves(S.moves || []);
+    animateMoves(S.moves || [], S.drawn.filter((c) => !revealed.has(c.id)));
   }
   seenRoll = S.roll_id;
   BOARD.spaces.forEach((sp, i) => {
@@ -227,10 +229,58 @@ function renderBoard() {
   let center = "";
   if (S.phase === "over") center += `<h2>🏆 ${pname(S.winner)} wins!</h2>${btn("New game", "vote_reset")}`;
   else if (cur) center += `<div><span class="dot" style="background:${cur.color}"></span> <b>${esc(cur.name)}</b>'s turn</div>`;
-  if (S.last_card) center += `<div class="cardtxt"><b>${S.last_card.deck === "chance" ? "Chance" : "Community Chest"}</b> (${pname(S.last_card.player)}): ${esc(S.last_card.text)}</div>`;
   center += `<div class="hint">Bank: ${S.bank_houses} houses, ${S.bank_hotels} hotels${S.rules.free_parking ? ` · Free Parking pot $${S.pot}` : ""}</div>`;
   center += `<div class="hint">Click any space for details. Click your own properties to build or mortgage.</div>`;
   $("center-info").innerHTML = center;
+  renderDecks();
+}
+
+const CARD_EASE = "cubic-bezier(.65, 0, .35, 1)"; // ease in and out, firmer than the CSS keyword
+const cardHtml = (c) => `<div class="hd">${c.deck === "chance" ? "CHANCE" : "COMMUNITY CHEST"}</div><div class="tx">${esc(c.text)}</div>`;
+
+// Each deck shows the front of the latest card from it that finished its flight this turn.
+function renderDecks() {
+  if (!S.drawn.length) $("flyer").hidden = true; // the turn ended mid-show
+  for (const deck of ["chance", "chest"]) {
+    const face = $("deck-" + deck).querySelector(".face");
+    const c = S.drawn.filter((d) => d.deck === deck && revealed.has(d.id)).at(-1);
+    face.hidden = !c;
+    if (c && face.dataset.id !== String(c.id)) {
+      face.className = "face " + deck;
+      face.innerHTML = cardHtml(c);
+      face.dataset.id = c.id;
+    }
+  }
+}
+
+// Transform that puts the flyer over a deck, or enlarged in the middle of the board.
+function flyerSpot(deck) {
+  const board = $("board"), fly = $("flyer");
+  if (!deck) {
+    const k = 2.2;
+    return `translate(${(board.clientWidth - fly.offsetWidth * k) / 2}px, ${(board.clientHeight - fly.offsetHeight * k) / 2}px) scale(${k})`;
+  }
+  const b = board.getBoundingClientRect(), r = $("deck-" + deck).getBoundingClientRect();
+  return `translate(${r.left - b.left - board.clientLeft}px, ${r.top - b.top - board.clientTop}px) scale(1)`;
+}
+
+// Draws the card out of its deck into the middle of the board, then (without
+// waiting) sends it back face up onto the deck once it has been read.
+async function showCard(c, run) {
+  const fly = $("flyer");
+  fly.className = "face " + c.deck;
+  fly.innerHTML = cardHtml(c);
+  fly.hidden = false;
+  fly.style.transform = flyerSpot();
+  fly.animate([{ transform: flyerSpot(c.deck) }, { transform: flyerSpot() }], { duration: 500, easing: CARD_EASE });
+  await new Promise((r) => setTimeout(r, 2800));
+  if (run !== animateMoves.run) return;
+  fly.style.transform = flyerSpot(c.deck);
+  fly.animate([{ transform: flyerSpot() }, { transform: flyerSpot(c.deck) }], { duration: 700, easing: CARD_EASE }).finished.then(() => {
+    fly.hidden = true;
+    revealed.add(c.id);
+    if (S) renderDecks();
+  }, () => {});
 }
 
 function setDice(a, b) {
@@ -269,18 +319,24 @@ function cellCenter(pos) {
 }
 
 // Replays the server's move list with a floating token: hop space by space for
-// walks, fly in an arc for jumps (e.g. to Jail).
-async function animateMoves(moves) {
+// walks, fly in an arc for jumps (e.g. to Jail). Cards drawn on the way are
+// shown as the token lands on each Chance / Community Chest space.
+async function animateMoves(moves, cards = []) {
   const run = (animateMoves.run = {}); // a newer roll cancels this one
-  const tok = $("mover");
+  const tok = $("mover"), fly = $("flyer");
   tok.getAnimations().forEach((a) => a.cancel());
+  fly.getAnimations().forEach((a) => a.cancel());
+  fly.hidden = true;
+  for (const c of S.drawn) if (!cards.includes(c)) revealed.add(c.id); // earlier cards cut short by this roll
   const pid = moves[0]?.player;
   // Background tabs skip it, so returning players see the board as it is now.
   if (!pid || moves.some((m) => m.player !== pid) || document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) {
     moving = null;
     tok.hidden = true;
+    for (const c of S.drawn) revealed.add(c.id);
     return;
   }
+  const pending = [...cards];
   moving = pid;
   tok.style.background = player(pid)?.color || "#888";
   const place = ([x, y]) => (tok.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`);
@@ -308,8 +364,10 @@ async function animateMoves(moves) {
       at = next;
     }
     await new Promise((r) => setTimeout(r, 300)); // pause on each landing
+    if (pending[0]?.deck === space(m.to).type) await showCard(pending.shift(), run);
   }
   if (run !== animateMoves.run) return;
+  for (const c of pending) revealed.add(c.id); // drawn without a matching landing
   moving = null;
   tok.hidden = true;
   if (S) renderBoard();

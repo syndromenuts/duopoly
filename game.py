@@ -72,6 +72,7 @@ class Game:
         self.forced_dice = []  # test hook: list of (d1, d2)
         self.roll_id = 0  # bumps on every turn roll so clients can animate repeats
         self.moves = []  # token movements since the last roll, for client animation
+        self.card_id = 0  # unique id per drawn card so clients animate each draw once
         self.reset_board()
 
     # ------------------------------------------------------------------ setup
@@ -98,7 +99,7 @@ class Game:
         self.trades = {}
         self.next_trade = 1
         self.winner = None
-        self.last_card = None
+        self.drawn = []  # cards drawn this turn, shown until the turn ends
 
     def say(self, msg):
         self.log.append(msg)
@@ -265,7 +266,8 @@ class Game:
         deck = self.decks[kind]
         idx = deck.pop(0)
         text, eff = DECKS[kind][idx]
-        self.last_card = {"deck": kind, "text": text, "player": p.id}
+        self.card_id += 1
+        self.drawn.append({"id": self.card_id, "deck": kind, "text": text, "player": p.id})
         self.say(f"{p.name} drew {'Chance' if kind == 'chance' else 'Community Chest'}: {text}")
         if eff[0] == "jailfree":
             p.cards.append(kind)
@@ -403,6 +405,7 @@ class Game:
         self.stage = "roll"
         self.doubles = 0
         self.extra_roll = False
+        self.drawn = []
         self.say(f"It is {self.current().name}'s turn.")
 
     # -------------------------------------------------------------- auctions
@@ -905,6 +908,6 @@ class Game:
             "mortgaged": sorted(self.mortgaged),
             "bank_houses": self.bank_houses, "bank_hotels": self.bank_hotels, "pot": self.pot,
             "debts": self.debts, "auction": self.auction, "auction_queue": self.auction_queue,
-            "trades": list(self.trades.values()), "winner": self.winner, "last_card": self.last_card,
+            "trades": list(self.trades.values()), "winner": self.winner, "drawn": self.drawn,
             "log": self.log[-60:], "colors": TOKEN_COLORS,
         }

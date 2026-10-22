@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from board import GROUPS, JAILFREE_INDEX  # noqa: E402
+from board import DECKS, GROUPS, JAILFREE_INDEX  # noqa: E402
 from game import Game, GameError  # noqa: E402
 
 
@@ -413,6 +413,20 @@ class Cards(unittest.TestCase):
         self.draw(g, a, "chance", 9)
         self.assertEqual(a.pos, 4)
         self.assertEqual(a.cash, 1300)
+
+    def test_drawn_cards_kept_until_turn_ends(self):
+        g, (a, b, c) = new_game()
+        a.pos = 29
+        chest = next(i for i, (_, eff) in enumerate(DECKS["chest"]) if eff[0] == "money")
+        for kind, idx in (("chance", 9), ("chest", chest)):
+            g.decks[kind].remove(idx)
+            g.decks[kind].insert(0, idx)
+        roll(g, a, 3, 4)  # Chance at 36 sends a back 3 to Community Chest at 33
+        self.assertEqual([d["deck"] for d in g.drawn], ["chance", "chest"])
+        self.assertLess(g.drawn[0]["id"], g.drawn[1]["id"])
+        resolve_buy(g)
+        act(g, a, "end_turn")
+        self.assertEqual(g.drawn, [])
 
     def test_repairs(self):
         g, (a, b, c) = new_game()
