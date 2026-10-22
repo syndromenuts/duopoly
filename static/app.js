@@ -98,7 +98,7 @@ function buildBoard() {
   const board = $("board");
   BOARD.spaces.forEach((sp, i) => {
     const c = document.createElement("div");
-    c.className = "cell" + (i % 10 === 0 ? " corner" : "") + (sp.type === "go" ? " go" : "");
+    c.className = "cell" + (i % 10 === 0 ? " corner" : "") + (sp.type === "go" || sp.type === "jail" ? " " + sp.type : "");
     c.id = "cell-" + i;
     const [r, col] = cellPlace(i);
     c.style.gridRow = r;
@@ -194,6 +194,11 @@ function renderLobby() {
   cash.disabled = !joined;
 }
 
+// Three floor-to-ceiling bars and a lock plate with a keyhole, drawn over the inmates. The bars
+// leave four equal gaps between the box's left edge and the lock plate, for the 3 stroke set in style.css.
+const JAIL_BARS = `<svg class="bars" viewBox="0 0 40 40"><path d="M6.75 0v40M15 0v40M23.25 0v40"/>
+  <rect class="lock" x="30" y="15" width="10" height="12" rx="1.5"/><path class="keyhole" d="M35 18.5a1.8 1.8 0 1 1 0 3.6a1.8 1.8 0 1 1 0-3.6M34.2 21.5h1.6l.6 3.5h-2.8z"/></svg>`;
+
 function renderBoard() {
   if (!revealed) revealed = new Set(S.drawn.map((c) => c.id)); // cards drawn before we connected skip the show
   if (seenRoll !== null && S.roll_id !== seenRoll && S.dice) {
@@ -209,15 +214,16 @@ function renderBoard() {
     let html = "";
     if (sp.type === "property") html += `<div class="strip" style="background:${BOARD.colors[sp.group]}"></div>`;
     const icon = { station: "🚉 ", utility: sp.name.startsWith("Power") ? "💡 " : "🚰 ", chance: "❓ ", chest: "📦 ", tax: "💸 " }[sp.type] || "";
-    html += `<div class="nm">${icon}${esc(sp.name)}</div>`;
+    if (sp.type === "jail") {
+      // Jailed players sit inside the cell, behind the bars; visitors stay in the L outside the box.
+      const jailed = here.filter((p) => p.in_jail);
+      const inmates = jailed.map((p) => `<span class="dot" style="background:${p.color}" title="${esc(p.name)}"></span>`).join("");
+      html += `<div class="jailbox"><div class="inmates">${inmates}</div>${JAIL_BARS}</div>`;
+    } else html += `<div class="nm">${icon}${esc(sp.name)}</div>`;
     if (sp.type === "go") html += `<svg class="arrow" viewBox="2.5 3 20.5 18"><path d="M21 12H5M12 4.5 4.5 12l7.5 7.5"/></svg>`; // play runs leftward from GO
     if (sp.price) html += `<div class="pr">$${sp.price}</div>`;
     if (sp.type === "tax") html += `<div class="pr">pay $${sp.amount}</div>`;
     if (h) html += `<div class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "HOTEL" : "■".repeat(h)}</div>`;
-    if (i === 10) {
-      const jailed = here.filter((p) => p.in_jail);
-      if (jailed.length) html += `<div>In jail: ${jailed.map((p) => `<span class="dot" style="background:${p.color}"></span>`).join("")}</div>`;
-    }
     if (i === 20 && S.rules.free_parking) html += `<div class="pr">Pot $${S.pot}</div>`;
     html += `<div class="toks">${here.filter((p) => !p.in_jail).map((p) => `<span class="dot" style="background:${p.color}" title="${esc(p.name)}"></span>`).join("")}</div>`;
     if (owner) html += `<div class="owner" style="background:${player(owner).color}"></div>`;
@@ -313,9 +319,11 @@ function animateDice() {
 }
 
 // Center of a board cell in #board coordinates, nudged down toward the token row.
-function cellCenter(pos) {
+// On Jail, visitors land in the bottom-left L and the jailed in the box's cell.
+function cellCenter(pos, jailed = false) {
   const c = $("cell-" + pos);
-  return [c.offsetLeft + c.offsetWidth / 2, c.offsetTop + c.offsetHeight * 0.62];
+  const [fx, fy] = !c.classList.contains("jail") ? [0.5, 0.62] : jailed ? [0.62, 0.38] : [0.14, 0.87];
+  return [c.offsetLeft + c.offsetWidth * fx, c.offsetTop + c.offsetHeight * fy];
 }
 
 // Replays the server's move list with a floating token: hop space by space for
@@ -351,7 +359,7 @@ async function animateMoves(moves, cards = []) {
   for (const m of moves) {
     if (run !== animateMoves.run) return;
     if (m.how === "jump") {
-      await hop(cellCenter(m.from), cellCenter(m.to), 700, $("board").offsetHeight * 0.25);
+      await hop(cellCenter(m.from), cellCenter(m.to, true), 700, $("board").offsetHeight * 0.25);
       continue;
     }
     const dir = m.how === "back" ? -1 : 1;
