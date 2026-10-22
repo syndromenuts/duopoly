@@ -130,6 +130,12 @@ function bindStatic() {
   $("bid-btn").onclick = () => send("bid", { amount: Number($("bid-amount").value) }).then((r) => r && ($("bid-amount").value = ""));
   $("pass-btn").onclick = () => send("pass");
 
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden || !moving) return;
+    animateMoves([]); // tabbing out mid-move drops the token on its final space
+    renderBoard();
+  });
+
   $("prop-modal").onclick = (e) => { if (e.target.id === "prop-modal") { openProp = null; renderProp(); } };
   $("trade-modal").onclick = (e) => { if (e.target.id === "trade-modal") closeTrade(); };
   $("trade-close").onclick = closeTrade;
@@ -269,7 +275,8 @@ async function animateMoves(moves) {
   const tok = $("mover");
   tok.getAnimations().forEach((a) => a.cancel());
   const pid = moves[0]?.player;
-  if (!pid || moves.some((m) => m.player !== pid) || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  // Background tabs skip it, so returning players see the board as it is now.
+  if (!pid || moves.some((m) => m.player !== pid) || document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) {
     moving = null;
     tok.hidden = true;
     return;
