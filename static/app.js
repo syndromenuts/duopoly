@@ -15,6 +15,7 @@ let tradeDraft = null;
 let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
 let rollingUntil = 0;
+let moving = null; // id of the player whose token is animating along the board
 
 // ------------------------------------------------------------------ server
 
@@ -187,11 +188,16 @@ function renderLobby() {
 }
 
 function renderBoard() {
+  if (seenRoll !== null && S.roll_id !== seenRoll && S.dice) {
+    animateDice();
+    animateMoves(S.moves || []);
+  }
+  seenRoll = S.roll_id;
   BOARD.spaces.forEach((sp, i) => {
     const c = $("cell-" + i);
     const owner = ownerOf(i);
     const h = housesOn(i);
-    const here = S.players.filter((p) => !p.bankrupt && p.pos === i);
+    const here = S.players.filter((p) => !p.bankrupt && p.pos === i && p.id !== moving);
     let html = "";
     if (sp.type === "property") html += `<div class="strip" style="background:${BOARD.colors[sp.group]}"></div>`;
     const icon = { station: "🚉 ", utility: sp.name.startsWith("Power") ? "💡 " : "🚰 ", chance: "❓ ", chest: "📦 ", tax: "💸 " }[sp.type] || "";
@@ -230,8 +236,6 @@ function setDice(a, b) {
 }
 
 function renderDice() {
-  if (seenRoll !== null && S.roll_id !== seenRoll && S.dice) animateDice();
-  seenRoll = S.roll_id;
   if (Date.now() >= rollingUntil) setDice(...(S.dice || [0, 0]));
 }
 
@@ -250,6 +254,58 @@ function animateDice() {
     clearInterval(animateDice.timer);
     setDice(...(S.dice || [0, 0]));
   }, 70);
+}
+
+// Center of a board cell in #board coordinates, nudged down toward the token row.
+function cellCenter(pos) {
+  const c = $("cell-" + pos);
+  return [c.offsetLeft + c.offsetWidth / 2, c.offsetTop + c.offsetHeight * 0.62];
+}
+
+// Replays the server's move list with a floating token: hop space by space for
+// walks, fly in an arc for jumps (e.g. to Jail).
+async function animateMoves(moves) {
+  const run = (animateMoves.run = {}); // a newer roll cancels this one
+  const tok = $("mover");
+  tok.getAnimations().forEach((a) => a.cancel());
+  const pid = moves[0]?.player;
+  if (!pid || moves.some((m) => m.player !== pid) || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    moving = null;
+    tok.hidden = true;
+    return;
+  }
+  moving = pid;
+  tok.style.background = player(pid)?.color || "#888";
+  const place = ([x, y]) => (tok.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`);
+  place(cellCenter(moves[0].from));
+  tok.hidden = false;
+  const hop = (a, b, ms, lift) => {
+    const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - lift];
+    const kf = [a, mid, b].map(([x, y], k) => ({ transform: `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${k === 1 ? 1.35 : 1})` }));
+    return tok.animate(kf, { duration: ms, easing: "ease-in-out" }).finished.then(() => place(b), () => {});
+  };
+  await new Promise((r) => setTimeout(r, Math.max(0, rollingUntil - Date.now()) + 150)); // let the dice settle
+  for (const m of moves) {
+    if (run !== animateMoves.run) return;
+    if (m.how === "jump") {
+      await hop(cellCenter(m.from), cellCenter(m.to), 700, $("board").offsetHeight * 0.25);
+      continue;
+    }
+    const dir = m.how === "back" ? -1 : 1;
+    const steps = ((m.to - m.from) * dir + 40) % 40;
+    for (let i = 0, at = m.from; i < steps; i++) {
+      if (run !== animateMoves.run) return;
+      const next = (at + dir + 40) % 40;
+      const ms = Math.max(45, 200 * 0.88 ** i); // each hop quicker than the last
+      await hop(cellCenter(at), cellCenter(next), ms, $("cell-" + at).offsetHeight * 0.35);
+      at = next;
+    }
+    await new Promise((r) => setTimeout(r, 300)); // pause on each landing
+  }
+  if (run !== animateMoves.run) return;
+  moving = null;
+  tok.hidden = true;
+  if (S) renderBoard();
 }
 
 function waitingReason() {

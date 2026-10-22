@@ -71,6 +71,7 @@ class Game:
         self.log = []
         self.forced_dice = []  # test hook: list of (d1, d2)
         self.roll_id = 0  # bumps on every turn roll so clients can animate repeats
+        self.moves = []  # token movements since the last roll, for client animation
         self.reset_board()
 
     # ------------------------------------------------------------------ setup
@@ -88,6 +89,7 @@ class Game:
         self.turn = 0
         self.stage = "roll"  # roll | buy | auction | done
         self.dice = None
+        self.moves = []
         self.doubles = 0
         self.extra_roll = False
         self.debts = []
@@ -185,21 +187,26 @@ class Game:
         p.cash += amount
         self.say(f"{p.name} collected ${amount} for {'landing on' if landed else 'passing'} GO.")
 
+    def relocate(self, p, target, how):
+        # how: "walk" forward, "back" backward, or "jump" straight there
+        self.moves.append({"player": p.id, "from": p.pos, "to": target, "how": how})
+        p.pos = target
+
     def advance_to(self, p, target):
         if target <= p.pos:
             self.salary(p, target == 0)
-        p.pos = target
+        self.relocate(p, target, "walk")
 
     def move(self, p, steps):
         new = (p.pos + steps) % 40
         if new < p.pos or new == 0:
             self.salary(p, new == 0)
-        p.pos = new
+        self.relocate(p, new, "walk")
         self.say(f"{p.name} moved to {SPACES[new]['name']}.")
         self.land(p, steps)
 
     def send_to_jail(self, p):
-        p.pos = JAIL
+        self.relocate(p, JAIL, "jump")
         p.in_jail = True
         p.jail_turns = 0
         self.extra_roll = False
@@ -278,7 +285,7 @@ class Game:
                 return self.land(p, sum(d), mode="card")
             return self.land(p, sum(self.dice), mode="card")
         if op == "back":
-            p.pos = (p.pos - eff[1]) % 40
+            self.relocate(p, (p.pos - eff[1]) % 40, "back")
             return self.land(p, sum(self.dice))
         if op == "jail":
             self.send_to_jail(p)
@@ -316,6 +323,7 @@ class Game:
         d1, d2 = self.roll_dice()
         self.dice = [d1, d2]
         self.roll_id += 1
+        self.moves = []
         total = d1 + d2
         doubles = d1 == d2
         self.say(f"{p.name} rolled {d1}+{d2}{' (doubles)' if doubles else ''}.")
@@ -891,7 +899,7 @@ class Game:
             "phase": self.phase, "rules": self.rules,
             "players": [p.public() for p in self.players.values()],
             "order": self.order, "turn": self.order[self.turn] if self.order else None,
-            "stage": self.stage, "dice": self.dice, "roll_id": self.roll_id, "doubles": self.doubles, "blocked": self.blocked() if self.phase == "playing" else False,
+            "stage": self.stage, "dice": self.dice, "roll_id": self.roll_id, "moves": self.moves, "doubles": self.doubles, "blocked": self.blocked() if self.phase == "playing" else False,
             "owners": {str(k): v for k, v in self.owners.items()},
             "houses": {str(k): v for k, v in self.houses.items() if v},
             "mortgaged": sorted(self.mortgaged),

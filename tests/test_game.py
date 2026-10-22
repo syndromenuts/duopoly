@@ -134,6 +134,18 @@ class Movement(unittest.TestCase):
         roll(g, a, 2, 3)
         self.assertTrue(a.in_jail)
         self.assertEqual(a.cash, 1500)
+        self.assertEqual(g.state()["moves"], [
+            {"player": a.id, "from": 25, "to": 30, "how": "walk"},
+            {"player": a.id, "from": 30, "to": 10, "how": "jump"},
+        ])
+
+    def test_moves_reset_each_roll(self):
+        g, (a, b, c) = new_game()
+        roll(g, a, 1, 2)
+        resolve_buy(g)
+        act(g, a, "end_turn")
+        roll(g, b, 2, 3)
+        self.assertEqual(g.moves, [{"player": b.id, "from": 0, "to": 5, "how": "walk"}])
 
 
 class Rent(unittest.TestCase):
