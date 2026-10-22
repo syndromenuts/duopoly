@@ -222,7 +222,6 @@ function renderBoard() {
     if (owner) html += `<div class="owner" style="background:${player(owner).color}"></div>`;
     c.innerHTML = html;
     c.classList.toggle("mort", isMortgaged(i));
-    c.classList.toggle("here", here.some((p) => p.id === S.turn));
   });
   const cur = player(S.turn);
   renderDice();
