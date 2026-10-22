@@ -98,7 +98,7 @@ function buildBoard() {
   const board = $("board");
   BOARD.spaces.forEach((sp, i) => {
     const c = document.createElement("div");
-    c.className = "cell" + (i % 10 === 0 ? " corner" : "") + (["go", "jail", "chance", "chest"].includes(sp.type) ? " " + sp.type : "");
+    c.className = "cell" + (i % 10 === 0 ? " corner" : "") + (["go", "jail", "chance", "chest", "parking"].includes(sp.type) ? " " + sp.type : "");
     c.id = "cell-" + i;
     const [r, col] = cellPlace(i);
     c.style.gridRow = r;
