@@ -49,10 +49,11 @@ label { display: block; margin: 4px 0; }
 .cell.mort { background: repeating-linear-gradient(45deg, var(--cell), var(--cell) 5px, var(--mort) 5px, var(--mort) 10px); }
 .cell .bld { color: var(--build); font-weight: 700; letter-spacing: -1px; }
 .cell .bld.hotel { color: var(--hotel); }
-.cell .toks { position: absolute; bottom: 7px; left: 0; right: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 1px; }
-.cell .toks .dot { width: clamp(8px, 1.4vw, 14px); height: clamp(8px, 1.4vw, 14px); border: 2px solid #fff; box-shadow: 0 0 0 1px #000; }
+.cell .toks { position: absolute; bottom: 5px; left: 0; right: 0; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 1px; }
+.cell .toks .dot { width: clamp(12px, 2vw, 20px); height: clamp(12px, 2vw, 20px); box-sizing: border-box; border: 3px solid #1a1a1a; margin: 0 -2px;
+  box-shadow: 0 2px 5px rgba(0,0,0,.55); }
 #mover { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; width: clamp(14px, 2.4vw, 26px); height: clamp(14px, 2.4vw, 26px);
-  border: 3px solid #fff; box-sizing: border-box; box-shadow: 0 0 0 1px #000, 0 3px 8px rgba(0,0,0,.45), 0 0 12px 3px rgba(246,201,14,.8); }
+  border: 3px solid #1a1a1a; box-sizing: border-box; box-shadow: 0 3px 8px rgba(0,0,0,.45), 0 0 12px 3px rgba(246,201,14,.8); }
 #mover[hidden] { display: none; }
 #center { grid-column: 2 / 11; grid-row: 2 / 11; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px; color: var(--cell-fg); }
 #center .title { font-size: clamp(18px, 4vw, 40px); font-weight: 800; letter-spacing: 4px; color: var(--title); }
