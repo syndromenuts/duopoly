@@ -164,6 +164,10 @@ function bindStatic() {
     if (await send("propose_trade", tradeDraft)) closeTrade();
   };
 
+  $("dice").onkeydown = (e) => {
+    if ((e.key === "Enter" || e.key === " ") && $("dice").dataset.act) { e.preventDefault(); $("dice").click(); }
+  };
+
   // Delegated clicks for buttons rendered from state.
   document.body.addEventListener("click", (e) => {
     const b = e.target.closest("[data-act]");
@@ -171,6 +175,10 @@ function bindStatic() {
     const data = b.dataset.arg ? JSON.parse(b.dataset.arg) : {};
     if (b.dataset.act === "open_trade") return openTrade(data);
     if (b.dataset.act === "counter") return counterTrade(data.id);
+    if (b.id === "dice") { // one roll per click; a refused roll makes the dice clickable again
+      setRollable(false);
+      return send("roll").then((r) => r || render());
+    }
     send(b.dataset.act, data);
   });
 }
@@ -335,6 +343,23 @@ function setDice(a, b) {
   });
 }
 
+// The dice in the middle of the board are the roll button when it is your roll.
+function setRollable(on) {
+  const el = $("dice");
+  el.classList.toggle("ready", on);
+  if (on) {
+    el.dataset.act = "roll";
+    el.setAttribute("role", "button");
+    el.tabIndex = 0;
+    el.title = "Roll the dice";
+  } else {
+    delete el.dataset.act;
+    el.removeAttribute("role");
+    el.removeAttribute("tabindex");
+    el.removeAttribute("title");
+  }
+}
+
 function renderDice() {
   if (Date.now() >= rollingUntil) setDice(...(S.dice || [1, 1]));
 }
@@ -441,6 +466,7 @@ function waitingReason() {
 function renderMe() {
   const m = me();
   const box = $("me");
+  setRollable(!!m && !m.bankrupt && S.phase === "playing" && myTurn() && !animating && S.stage === "roll" && !(S.blocked && waitingReason()));
   if (!m) {
     box.innerHTML = `<b>You are watching.</b>`;
     return;
@@ -471,8 +497,8 @@ function renderMe() {
           html += `<div>You are in Jail (attempt ${m.jail_turns + 1} of 3).</div>`;
           html += btn("Pay $50", "pay_jail", null, "", dis || m.cash < 50);
           if (m.cards) html += btn("Use card", "use_card", null, "", dis);
-          html += btn("Roll for doubles", "roll", null, "", dis);
-        } else html += btn(S.dice && S.doubles ? "Roll again (doubles)" : "Roll dice", "roll", null, "", dis);
+          if (!dis) html += `<div class="prompt">Or click the dice in the middle of the board to roll for doubles.</div>`;
+        } else if (!dis) html += `<div class="prompt">${S.dice && S.doubles ? "Doubles! Click the dice in the middle of the board to roll again." : "Click the dice in the middle of the board to roll."}</div>`;
       } else if (S.stage === "buy") {
         const sp = space(m.pos);
         html += `<div>Buy <b>${esc(sp.name)}</b> for $${sp.price}?</div>`;
