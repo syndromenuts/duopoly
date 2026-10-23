@@ -11,7 +11,7 @@ from game import Game, GameError
 
 STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-         ".css": "text/css; charset=utf-8", ".json": "application/json"}
+         ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png"}
 
 GAME = Game()
 LOCK = threading.Lock()

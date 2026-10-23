@@ -103,6 +103,7 @@ function buildBoard() {
     const [r, col] = cellPlace(i);
     c.style.gridRow = r;
     c.style.gridColumn = col;
+    if (i % 10 && (col === 1 || col === 11)) c.classList.add("side"); // left and right columns: wide, short squares
     c.onclick = () => { openProp = i; renderProp(); };
     board.appendChild(c);
   });
@@ -199,10 +200,10 @@ function renderLobby() {
 const JAIL_BARS = `<svg class="bars" viewBox="0 0 40 40"><path d="M6.75 0v40M15 0v40M23.25 0v40"/>
   <rect class="lock" x="30" y="15" width="10" height="12" rx="1.5"/><path class="keyhole" d="M35 18.5a1.8 1.8 0 1 1 0 3.6a1.8 1.8 0 1 1 0-3.6M34.2 21.5h1.6l.6 3.5h-2.8z"/></svg>`;
 
-// Line drawings for the middle of the Chance and Community Chest squares.
+// Pictures for the middle of the Chance and Community Chest squares.
 const DECK_ICONS = {
   chance: `<svg class="icon" viewBox="0 0 24 24"><path d="M8 8.5a4 4 0 1 1 5.6 3.7c-1 .45-1.6 1.3-1.6 2.3v1.5"/><circle class="fill" cx="12" cy="19.5" r="1.4"/></svg>`,
-  chest: `<svg class="icon" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v2M4 11h16v8H4zM12 10v3"/></svg>`,
+  chest: `<img class="icon" src="chest.png" alt="">`,
 };
 
 // Where inmates stand in the box, as % of its width: up to 3 to a row, clear of the lock plate, the
@@ -262,7 +263,7 @@ function renderBoard() {
 }
 
 const CARD_EASE = "cubic-bezier(.65, 0, .35, 1)"; // ease in and out, firmer than the CSS keyword
-const cardHtml = (c) => `<div class="hd">${c.deck === "chance" ? "CHANCE" : "COMMUNITY CHEST"}</div><div class="tx">${esc(c.text)}</div>`;
+const cardHtml = (c) => `<div class="hd">${c.deck === "chance" ? "CHANCE" : '<img src="chest.png" alt="">COMMUNITY CHEST'}</div><div class="tx">${esc(c.text)}</div>`;
 
 // Each deck shows the front of the latest card from it that finished its flight this turn.
 function renderDecks() {
