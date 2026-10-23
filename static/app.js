@@ -269,11 +269,9 @@ function renderBoard() {
     c.innerHTML = html;
     c.classList.toggle("mort", isMortgaged(i));
   });
-  const cur = player(S.turn);
   renderDice();
   let center = "";
   if (S.phase === "over") center += `<h2>🏆 ${pname(S.winner)} wins!</h2>${btn("New game", "vote_reset")}`;
-  else if (cur) center += `<div><span class="dot" style="background:${cur.color}"></span> <b>${esc(cur.name)}</b>'s turn</div>`;
   center += `<div class="hint">Bank: ${S.bank_houses} houses, ${S.bank_hotels} hotels${S.rules.free_parking ? ` · Free Parking pot $${S.pot}` : ""}</div>`;
   center += `<div class="hint">Click any space for details. Click your own properties to build or mortgage.</div>`;
   $("center-info").innerHTML = center;
