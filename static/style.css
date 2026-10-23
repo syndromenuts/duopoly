@@ -156,7 +156,6 @@ label { display: block; margin: 4px 0; }
 
 #me .cash { font-size: 22px; font-weight: 700; }
 #me .notice { background: #3a2c16; border-left: 4px solid var(--warn); padding: 6px 8px; margin: 8px 0; }
-#me .prompt { margin: 8px 0; font-weight: 600; color: #f6c90e; }
 #me .notice.bad { background: #3d1c1e; border-left-color: var(--danger); }
 #log { max-height: 220px; overflow-y: auto; font-size: 12px; }
 #log li { padding: 2px 0; border-bottom: 1px solid var(--line-soft); }

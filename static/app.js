@@ -496,13 +496,10 @@ function renderMe() {
       const wait = S.blocked ? waitingReason() : "";
       if (wait) html += `<div class="notice">Waiting: ${wait}</div>`;
       const dis = !!wait;
-      if (S.stage === "roll") {
-        if (m.in_jail) {
-          html += `<div>You are in Jail (attempt ${m.jail_turns + 1} of 3).</div>`;
-          html += btn("Pay $50", "pay_jail", null, "", dis || m.cash < 50);
-          if (m.cards) html += btn("Use card", "use_card", null, "", dis);
-          if (!dis) html += `<div class="prompt">Or click the dice in the middle of the board to roll for doubles.</div>`;
-        } else if (!dis) html += `<div class="prompt">${S.dice && S.doubles ? "Doubles! Click the dice in the middle of the board to roll again." : "Click the dice in the middle of the board to roll."}</div>`;
+      if (S.stage === "roll" && m.in_jail) {
+        html += `<div>You are in Jail (attempt ${m.jail_turns + 1} of 3).</div>`;
+        html += btn("Pay $50", "pay_jail", null, "", dis || m.cash < 50);
+        if (m.cards) html += btn("Use card", "use_card", null, "", dis);
       }
     } else if (S.turn && !myTurn()) {
       html += `<div class="hint">Waiting for ${pname(S.turn)}.</div>`;
