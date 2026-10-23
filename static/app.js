@@ -539,15 +539,17 @@ function renderPlayers() {
   if (S.phase === "lobby") return renderLobby();
   const elapsed = (Date.now() - receivedAt) / 1000;
   const order = S.order.map(player);
-  $("players").innerHTML = `<h3>Players</h3><ul class="plain">` + order.map((p) => {
+  // Beside the board in turn order, first player at the top, with whoever is up highlighted.
+  $("turns").innerHTML = order.map((p) => {
     const away = Math.round(p.away + elapsed);
     const kick = !p.connected && !p.bankrupt && me() && !me().bankrupt && p.id !== myId
-      ? (away >= 120 ? btn("Remove", "kick", { id: p.id }, "danger") : `<span class="hint">(can remove in ${120 - away}s)</span>`) : "";
+      ? (away >= 120 ? btn("Remove", "kick", { id: p.id }, "danger") : `<span class="hint" title="Can remove in ${120 - away}s">${120 - away}s</span>`) : "";
+    // One line of name and stats, one of property chips; the name gives way so the stats and Remove always show.
     return `<li class="${p.id === S.turn ? "turn" : ""} ${p.bankrupt ? "out" : ""}">
-      <span class="dot" style="background:${p.color}"></span> ${esc(p.name)}${p.id === myId ? " (you)" : ""} — $${p.cash}
-      ${p.in_jail ? "🔒" : ""}${p.cards ? " 🎫×" + p.cards : ""}${p.connected ? "" : " ⚠️ disconnected"} ${kick}
-      <div>${chips(ownedBy(p.id))}</div></li>`;
-  }).join("") + `</ul>`;
+      <div class="who"><span class="dot" style="background:${p.color}"></span><span class="nm" title="${esc(p.name)}">${esc(p.name)}${p.id === myId ? " (you)" : ""}</span>
+      <span class="st">$${p.cash}${p.in_jail ? " 🔒" : ""}${p.cards ? " 🎫×" + p.cards : ""}${p.connected ? "" : ` <span title="Disconnected">⚠️</span>`} ${kick}</span></div>
+      <div class="chips">${chips(ownedBy(p.id))}</div></li>`;
+  }).join("");
 }
 
 function renderProp() {

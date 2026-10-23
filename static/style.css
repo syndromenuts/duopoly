@@ -37,7 +37,21 @@ label { display: block; margin: 4px 0; }
 #game { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px; align-items: flex-start; justify-content: center; }
 #board { --B: min(96vw, 94vh, 860px); position: relative; display: grid; grid-template-columns: 1.4fr repeat(9, 1fr) 1.4fr; grid-template-rows: 1.4fr repeat(9, 1fr) 1.4fr;
   width: var(--B); aspect-ratio: 1; background: var(--board); border: 2px solid var(--cell-line); }
-#side { width: 360px; max-width: 100%; }
+#turns { margin-top: auto; font-size: 20px; background: var(--card); border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+#turns li { height: 64px; overflow: hidden; padding: 6px 12px; line-height: 1.25; border-bottom: 1px solid var(--line); } /* a stats line and one row of chips */
+#turns .who { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+#turns .who .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#turns li button { padding: 1px 8px; margin: 0; font-size: 15px; }
+#turns .who .dot { width: 20px; height: 20px; flex: none; }
+#turns li .hint { font-size: 15px; margin: 0; }
+#turns .chip { width: 8px; height: 15px; margin-right: 1px; vertical-align: top; } /* narrow enough that all 28 properties fit in one row */
+#turns .chips { height: 17px; margin-top: 5px; line-height: 17px; white-space: nowrap; }
+#turns li:last-child { border-bottom: 0; }
+#turns li.turn { background: #3b3518; box-shadow: inset 4px 0 0 #f6c90e; }
+#turns li.turn .who { font-weight: 700; }
+#turns li.out { opacity: .45; }
+#turns li.out .who { text-decoration: line-through; }
+#side { width: 360px; max-width: 100%; align-self: stretch; display: flex; flex-direction: column; } /* as tall as the board, so the turn list sits level with its bottom */
 .cell { position: relative; border: 1px solid var(--cell-line); background: var(--cell); color: var(--cell-fg); overflow: hidden; display: flex; flex-direction: column;
   align-items: center; justify-content: flex-start; text-align: center; font-size: clamp(7px, 1.05vw, 11px); line-height: 1.1; cursor: pointer; }
 .cell:hover { outline: 2px solid var(--accent); z-index: 2; }
@@ -121,9 +135,6 @@ label { display: block; margin: 4px 0; }
 #me .cash { font-size: 22px; font-weight: 700; }
 #me .notice { background: #3a2c16; border-left: 4px solid var(--warn); padding: 6px 8px; margin: 8px 0; }
 #me .notice.bad { background: #3d1c1e; border-left-color: var(--danger); }
-#players li { padding: 4px 0; border-bottom: 1px solid var(--line-soft); }
-#players li.turn { font-weight: 700; }
-#players li.out { opacity: .45; text-decoration: line-through; }
 #log { max-height: 220px; overflow-y: auto; font-size: 12px; }
 #log li { padding: 2px 0; border-bottom: 1px solid var(--line-soft); }
 #auction { border: 2px solid var(--warn); }
