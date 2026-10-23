@@ -55,13 +55,14 @@ label { display: block; margin: 4px 0; }
 .cell.gotojail { background: #868b93; }
 .cell.station { background: #b8d8d6; } /* light tint of the sign's teal (#01726e) */
 .cell.power { background: #fbf1c2; } /* light tint of the bulb's yellow */
+.cell.water { background: #d4e9f7; } /* light tint of the drop's blue */
 .cell .icon { width: 55%; height: auto; max-height: 50%; margin: auto 0; transform: translateY(-15%); flex: none; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .cell .icon .fill { fill: currentColor; stroke: none; }
 .cell img.icon { flex: 1 1 0; min-height: 0; width: 70%; max-height: none; margin: 2px 0 6px; object-fit: contain; transform: none; } /* fills what the label leaves, so short side squares don't squash it */
 .cell.side img.icon { flex: none; height: 42%; margin: auto 0; }
 .cell.side img.station { flex: 1 1 0; height: auto; margin: 1px 0 3px; } /* as big as fits between name and price */
 .cell img.station + .pr { margin-bottom: 1em; } /* lift the price off the bottom edge */
-.cell.side img.station + .pr, .cell.side img.power + .pr { margin-bottom: calc(.4em + 5px); } /* clear the owner bar too */
+.cell.side img.station + .pr, .cell.side img.power + .pr, .cell.side img.water + .pr { margin-bottom: calc(.4em + 5px); } /* clear the owner bar too */
 .cell.go .nm { font-size: clamp(11px, 1.8vw, 20px); letter-spacing: 1px; }
 .cell.parking .nm, .cell.gotojail .nm { font-size: clamp(9px, 1.4vw, 16px); letter-spacing: 1px; text-transform: uppercase; } /* GO's size would overflow PARKING */
 .cell.go .arrow { width: 50%; height: auto; margin-top: 12%; transform: translateY(-10%); flex: none; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
