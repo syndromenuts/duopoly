@@ -6,7 +6,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const PIPS = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
 
 let BOARD = null;
-let S = null; // latest game state
+let S = null; // game state on screen
+let held = null; // newer state waiting for the roll on screen to finish playing out
 let receivedAt = 0;
 let token = localStorage.getItem("duopoly-token") || "";
 let myId = localStorage.getItem("duopoly-id") || "";
@@ -16,6 +17,7 @@ let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
 let rollingUntil = 0;
 let moving = null; // id of the player whose token is animating along the board
+let animating = false; // a roll is still playing out (token or card), so the rest of the state waits
 let revealed = null; // ids of drawn cards that have reached their deck (null until the first state)
 
 // ------------------------------------------------------------------ server
@@ -45,9 +47,25 @@ function connect() {
   if (events) events.close();
   events = new EventSource("/events?token=" + encodeURIComponent(token));
   events.onmessage = (e) => {
-    S = JSON.parse(e.data);
+    const next = JSON.parse(e.data);
     receivedAt = Date.now();
-    render();
+    if (!revealed) revealed = new Set(next.drawn.map((c) => c.id)); // cards drawn before we connected skip the show
+    const fresh = seenRoll !== null && next.roll_id !== seenRoll && next.dice && next.phase !== "lobby";
+    seenRoll = next.roll_id;
+    if (fresh) {
+      // Play the roll out over the board as it stood before it; the rest of the
+      // new state (cash, owners, log...) lands once the animation finishes.
+      const before = held || S;
+      held = next;
+      S = { ...before, dice: next.dice, doubles: next.doubles, roll_id: next.roll_id, moves: next.moves, drawn: next.drawn };
+      animateDice();
+      animateMoves(next.moves || [], next.drawn.filter((c) => !revealed.has(c.id)));
+      if (animating) render(); // otherwise it was skipped and finishRoll already rendered
+    } else if (animating) held = next;
+    else {
+      S = next;
+      render();
+    }
   };
 }
 
@@ -134,9 +152,8 @@ function bindStatic() {
   $("pass-btn").onclick = () => send("pass");
 
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden || !moving) return;
+    if (!document.hidden || !animating) return;
     animateMoves([]); // tabbing out mid-move drops the token on its final space
-    renderBoard();
   });
 
   $("prop-modal").onclick = (e) => { if (e.target.id === "prop-modal") { openProp = null; renderProp(); } };
@@ -226,12 +243,6 @@ function inmateDots(jailed) {
 }
 
 function renderBoard() {
-  if (!revealed) revealed = new Set(S.drawn.map((c) => c.id)); // cards drawn before we connected skip the show
-  if (seenRoll !== null && S.roll_id !== seenRoll && S.dice) {
-    animateDice();
-    animateMoves(S.moves || [], S.drawn.filter((c) => !revealed.has(c.id)));
-  }
-  seenRoll = S.roll_id;
   BOARD.spaces.forEach((sp, i) => {
     const c = $("cell-" + i);
     const owner = ownerOf(i);
@@ -297,7 +308,8 @@ function flyerSpot(deck) {
 }
 
 // Draws the card out of its deck into the middle of the board, then (without
-// waiting) sends it back face up onto the deck once it has been read.
+// waiting) sends it back face up onto the deck once it has been read. The
+// return flight is kept in showCard.back so the end of the roll can wait for it.
 async function showCard(c, run) {
   const fly = $("flyer");
   fly.className = "face " + c.deck;
@@ -308,7 +320,7 @@ async function showCard(c, run) {
   await new Promise((r) => setTimeout(r, 2800));
   if (run !== animateMoves.run) return;
   fly.style.transform = flyerSpot(c.deck);
-  fly.animate([{ transform: flyerSpot() }, { transform: flyerSpot(c.deck) }], { duration: 700, easing: CARD_EASE }).finished.then(() => {
+  showCard.back = fly.animate([{ transform: flyerSpot() }, { transform: flyerSpot(c.deck) }], { duration: 700, easing: CARD_EASE }).finished.then(() => {
     fly.hidden = true;
     revealed.add(c.id);
     if (S) renderDecks();
@@ -357,6 +369,8 @@ function cellCenter(pos, jailed = false) {
 // shown as the token lands on each Chance / Community Chest space.
 async function animateMoves(moves, cards = []) {
   const run = (animateMoves.run = {}); // a newer roll cancels this one
+  animating = true;
+  showCard.back = null;
   const tok = $("mover"), fly = $("flyer");
   tok.getAnimations().forEach((a) => a.cancel());
   fly.getAnimations().forEach((a) => a.cancel());
@@ -365,10 +379,8 @@ async function animateMoves(moves, cards = []) {
   const pid = moves[0]?.player;
   // Background tabs skip it, so returning players see the board as it is now.
   if (!pid || moves.some((m) => m.player !== pid) || document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    moving = null;
-    tok.hidden = true;
     for (const c of S.drawn) revealed.add(c.id);
-    return;
+    return finishRoll();
   }
   const pending = [...cards];
   moving = pid;
@@ -402,9 +414,17 @@ async function animateMoves(moves, cards = []) {
   }
   if (run !== animateMoves.run) return;
   for (const c of pending) revealed.add(c.id); // drawn without a matching landing
+  await showCard.back; // a card drawn on the last landing may still be flying home
+  if (run === animateMoves.run) finishRoll();
+}
+
+// Drops the token and catches the screen up with the state held during the roll.
+function finishRoll() {
   moving = null;
-  tok.hidden = true;
-  if (S) renderBoard();
+  animating = false;
+  $("mover").hidden = true;
+  if (held) [S, held] = [held, null];
+  render();
 }
 
 function waitingReason() {
@@ -442,7 +462,7 @@ function renderMe() {
         ${btn(`Pay off $${mv + fee}`, "mortgage_choice", { pos, pay_off: true })}${btn(`Keep mortgaged ($${fee})`, "mortgage_choice", { pos, pay_off: false }, "secondary")}</div>`;
     }
     if (m.pending_build) html += `<div class="notice">You won a ${m.pending_build}. Click one of your properties and choose Build to place it.</div>`;
-    if (myTurn()) {
+    if (myTurn() && !animating) { // the turn's prompts wait until the roll has finished playing out
       const wait = S.blocked ? waitingReason() : "";
       if (wait) html += `<div class="notice">Waiting: ${wait}</div>`;
       const dis = !!wait;
@@ -462,7 +482,7 @@ function renderMe() {
       } else if (S.stage === "done") {
         html += btn("End turn", "end_turn", null, "", dis);
       }
-    } else if (S.turn) {
+    } else if (S.turn && !myTurn()) {
       html += `<div class="hint">Waiting for ${pname(S.turn)}.</div>`;
     }
   }
