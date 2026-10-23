@@ -116,7 +116,7 @@ label { display: block; margin: 4px 0; }
 #center .deck.chance { margin-bottom: auto; }
 #center .deck.chest { margin-top: auto; }
 .deck .back { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: .5em; border-radius: calc(var(--B) * .012);
-  border: calc(var(--B) * .004) solid #fff; outline: 1px solid rgba(0,0,0,.35); color: #fff; font-weight: 800; letter-spacing: 1px;
+  border: calc(var(--B) * .004) solid #fff; color: #fff; font-weight: 800; letter-spacing: 1px;
   font-size: calc(var(--B) * .018); text-shadow: 0 1px 2px rgba(0,0,0,.4); }
 .deck .back span { font-size: 1.8em; }
 .deck.chest .back { flex-direction: column; gap: .2em; }
@@ -124,7 +124,7 @@ label { display: block; margin: 4px 0; }
 .deck.chance .back { background: var(--chance); }
 .deck.chest .back { background: var(--chest); }
 .face { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: #fffdf6; color: var(--cell-fg);
-  border-radius: calc(var(--B) * .012); border: 1px solid #999; font-size: calc(var(--B) * .0135); }
+  border-radius: calc(var(--B) * .012); font-size: calc(var(--B) * .0135); }
 .face .hd { padding: .3em; color: #fff; font-weight: 800; letter-spacing: 1px; text-align: center; }
 .face.chance .hd { background: var(--chance); }
 .face.chest .hd { background: var(--chest); }
