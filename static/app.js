@@ -318,7 +318,7 @@ function setDice(a, b) {
 }
 
 function renderDice() {
-  if (Date.now() >= rollingUntil) setDice(...(S.dice || [0, 0]));
+  if (Date.now() >= rollingUntil) setDice(...(S.dice || [1, 1]));
 }
 
 function animateDice() {
@@ -334,7 +334,7 @@ function animateDice() {
   animateDice.timer = setInterval(() => {
     if (Date.now() < rollingUntil) return setDice(face(), face());
     clearInterval(animateDice.timer);
-    setDice(...(S.dice || [0, 0]));
+    setDice(...(S.dice || [1, 1]));
   }, 70);
 }
 
