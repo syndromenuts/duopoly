@@ -66,6 +66,7 @@ label { display: block; margin: 4px 0; }
 .cell.go .nm { font-size: clamp(11px, 1.8vw, 20px); letter-spacing: 1px; }
 .cell.parking .nm, .cell.gotojail .nm { font-size: clamp(9px, 1.4vw, 16px); letter-spacing: 1px; text-transform: uppercase; } /* GO's size would overflow PARKING */
 .cell.gotojail .nm { font-size: calc(var(--B) * .0125); white-space: nowrap; } /* scales with the board so GO TO JAIL keeps to one line */
+.cell.parking .nm { font-size: clamp(8px, 1.25vw, 14px); }
 .cell.parking .nm, .cell.gotojail .nm { margin-top: .6em; } /* the picture fills the rest, so the label would sit on the top edge */
 .cell.go .arrow { width: 50%; height: auto; margin-top: 12%; transform: translateY(-10%); flex: none; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .cell.jail .jailbox { position: absolute; top: 0; right: 0; width: 76%; height: 76%; box-sizing: border-box; background: #868b93;
