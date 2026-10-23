@@ -45,7 +45,8 @@ label { display: block; margin: 4px 0; }
 .cell .nm { padding: 1px 3px; max-width: 100%; box-sizing: border-box; font-weight: 600; }
 .cell:not(.corner) > .nm:first-child { margin-top: .6em; } /* no colour strip above, so keep the label off the edge */
 .cell .pr { color: var(--cell-muted); }
-.cell.corner { justify-content: center; font-weight: 700; font-size: clamp(8px, 1.2vw, 13px); }
+.cell.corner { justify-content: center; font-weight: 800; font-size: clamp(8px, 1.2vw, 13px); }
+.cell.corner .nm { font-weight: inherit; }
 .cell.go { background: #2e9e4f; }
 .cell.go { color: #fff; }
 .cell.chance { background: var(--chance); color: #fff; }
