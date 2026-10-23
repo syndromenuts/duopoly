@@ -196,6 +196,7 @@ function render() {
   if (!inGame) return renderLobby();
   renderBoard();
   renderMe();
+  renderBuyOffer();
   renderAuction();
   renderTrades();
   renderPlayers();
@@ -499,12 +500,6 @@ function renderMe() {
           if (m.cards) html += btn("Use card", "use_card", null, "", dis);
           if (!dis) html += `<div class="prompt">Or click the dice in the middle of the board to roll for doubles.</div>`;
         } else if (!dis) html += `<div class="prompt">${S.dice && S.doubles ? "Doubles! Click the dice in the middle of the board to roll again." : "Click the dice in the middle of the board to roll."}</div>`;
-      } else if (S.stage === "buy") {
-        const sp = space(m.pos);
-        html += `<div>Buy <b>${esc(sp.name)}</b> for $${sp.price}?</div>`;
-        html += btn("Buy", "buy", null, "", dis || m.cash < sp.price);
-        html += btn("Decline (auction)", "decline", null, "secondary", dis);
-        if (m.cash < sp.price) html += `<div class="hint">Not enough cash. You can mortgage or sell to raise it.</div>`;
       } else if (S.stage === "done") {
         html += btn("End turn", "end_turn", null, "", dis);
       }
@@ -519,6 +514,25 @@ function renderMe() {
     if (votes) html += `<div class="hint">${votes} vote(s) to end the game. Every connected player must vote.</div>`;
   }
   box.innerHTML = html;
+}
+
+// The offer to buy the space you landed on, laid over the middle of the board once the roll has played out.
+function renderBuyOffer() {
+  const m = me();
+  const box = $("buy-offer");
+  box.hidden = !(m && !m.bankrupt && myTurn() && !animating && S.stage === "buy");
+  if (box.hidden) return;
+  const sp = space(m.pos);
+  const wait = S.blocked ? waitingReason() : "";
+  const rent = sp.type === "property" ? `Rent $${sp.rent[0]}, doubled with the full color set`
+    : sp.type === "station" ? "Rent $25 to $200, by stations owned" : "Rent 4× the dice, 10× with both utilities";
+  let html = `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}</div>`;
+  html += `<div class="price">$${sp.price}</div><div class="hint">${rent}</div>`;
+  html += `<div class="hint">You have $${m.cash}${m.cash >= sp.price ? `, leaving $${m.cash - sp.price}` : ""}.</div>`;
+  if (wait) html += `<div class="hint">Waiting: ${wait}</div>`;
+  else if (m.cash < sp.price) html += `<div class="hint">Not enough cash. You can mortgage or sell to raise it.</div>`;
+  html += `<div class="acts">${btn("Buy", "buy", null, "go", !!wait || m.cash < sp.price)}${btn("Decline (auction)", "decline", null, "danger", !!wait)}</div>`;
+  $("buy-body").innerHTML = html;
 }
 
 function renderAuction() {
