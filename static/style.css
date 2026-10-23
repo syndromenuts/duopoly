@@ -124,6 +124,9 @@ label { display: block; margin: 4px 0; }
   #center .dice { transition: none; }
   #center .dice.ready .die { animation: none; box-shadow: 0 .05em .12em rgba(0,0,0,.35), 0 0 .1em .05em rgba(246,201,14,.9); }
 }
+#center-info { position: relative; }
+#center .end-turn { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: calc(var(--B) * .05); } /* takes no room, so the rest of the center stays put */
+#center .end-turn button { margin: 0; padding: 8px 18px; font-size: clamp(13px, 1.7vw, 16px); }
 #center .deck { position: relative; flex: none; width: calc(var(--B) * .25); height: calc(var(--B) * .15); margin: calc(var(--B) * .01) 0; }
 #center .deck.chance { margin-bottom: auto; }
 #center .deck.chest { margin-top: auto; }

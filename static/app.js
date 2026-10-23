@@ -283,6 +283,9 @@ function renderBoard() {
   if (S.phase === "over") center += `<h2>🏆 ${pname(S.winner)} wins!</h2>${btn("New game", "vote_reset")}`;
   center += `<div class="hint">Bank: ${S.bank_houses} houses, ${S.bank_hotels} hotels${S.rules.free_parking ? ` · Free Parking pot $${S.pot}` : ""}</div>`;
   center += `<div class="hint">Click any space for details. Click your own properties to build or mortgage.</div>`;
+  const m = me();
+  if (m && !m.bankrupt && S.phase === "playing" && myTurn() && !animating && S.stage === "done" && !(S.blocked && waitingReason()))
+    center += `<div class="end-turn">${btn("End turn", "end_turn", null, "danger")}</div>`;
   $("center-info").innerHTML = center;
   renderDecks();
 }
@@ -500,8 +503,6 @@ function renderMe() {
           if (m.cards) html += btn("Use card", "use_card", null, "", dis);
           if (!dis) html += `<div class="prompt">Or click the dice in the middle of the board to roll for doubles.</div>`;
         } else if (!dis) html += `<div class="prompt">${S.dice && S.doubles ? "Doubles! Click the dice in the middle of the board to roll again." : "Click the dice in the middle of the board to roll."}</div>`;
-      } else if (S.stage === "done") {
-        html += btn("End turn", "end_turn", null, "", dis);
       }
     } else if (S.turn && !myTurn()) {
       html += `<div class="hint">Waiting for ${pname(S.turn)}.</div>`;
