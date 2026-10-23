@@ -65,6 +65,7 @@ label { display: block; margin: 4px 0; }
 .cell.side img.station + .pr, .cell.side img.power + .pr, .cell.side img.water + .pr { margin-bottom: calc(.4em + 5px); } /* clear the owner bar too */
 .cell.go .nm { font-size: clamp(11px, 1.8vw, 20px); letter-spacing: 1px; }
 .cell.parking .nm, .cell.gotojail .nm { font-size: clamp(9px, 1.4vw, 16px); letter-spacing: 1px; text-transform: uppercase; } /* GO's size would overflow PARKING */
+.cell.parking .nm { margin-top: .6em; } /* the car fills the rest, so the label would sit on the top edge */
 .cell.go .arrow { width: 50%; height: auto; margin-top: 12%; transform: translateY(-10%); flex: none; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .cell.jail .jailbox { position: absolute; top: 0; right: 0; width: 76%; height: 76%; box-sizing: border-box; background: #868b93;
   border-left: 1px solid var(--cell-line); border-bottom: 1px solid var(--cell-line); }

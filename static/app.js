@@ -218,13 +218,14 @@ function renderLobby() {
 const JAIL_BARS = `<svg class="bars" viewBox="0 0 40 40"><path d="M6.75 0v40M15 0v40M23.25 0v40"/>
   <rect class="lock" x="30" y="15" width="10" height="12" rx="1.5"/><path class="keyhole" d="M35 18.5a1.8 1.8 0 1 1 0 3.6a1.8 1.8 0 1 1 0-3.6M34.2 21.5h1.6l.6 3.5h-2.8z"/></svg>`;
 
-// Pictures for the middle of the Chance, Community Chest, station and utility squares.
+// Pictures for the middle of the Chance, Community Chest, station, utility and Free Parking squares.
 const SQUARE_ICONS = {
   chance: `<svg class="icon" viewBox="0 0 24 24"><path d="M8 8.5a4 4 0 1 1 5.6 3.7c-1 .45-1.6 1.3-1.6 2.3v1.5"/><circle class="fill" cx="12" cy="19.5" r="1.4"/></svg>`,
   chest: `<img class="icon" src="chest.png" alt="">`,
   station: `<img class="icon station" src="train-station.png" alt="">`,
   power: `<img class="icon station power" src="light-bulb.png" alt="">`, // sized like the station sign
   water: `<img class="icon station water" src="faucet.png" alt="">`,
+  parking: `<img class="icon parking" src="car.png" alt="">`,
 };
 
 // Where inmates stand in the box, as % of its width: up to 3 to a row, clear of the lock plate, the
