@@ -98,7 +98,7 @@ function buildBoard() {
   const board = $("board");
   BOARD.spaces.forEach((sp, i) => {
     const c = document.createElement("div");
-    c.className = "cell" + (i % 10 === 0 ? " corner" : "") + (["go", "jail", "gotojail", "chance", "chest", "parking"].includes(sp.type) ? " " + sp.type : "");
+    c.className = "cell" + (i % 10 === 0 ? " corner" : "") + (["go", "jail", "gotojail", "chance", "chest", "parking", "station"].includes(sp.type) ? " " + sp.type : "");
     c.id = "cell-" + i;
     const [r, col] = cellPlace(i);
     c.style.gridRow = r;
@@ -200,10 +200,11 @@ function renderLobby() {
 const JAIL_BARS = `<svg class="bars" viewBox="0 0 40 40"><path d="M6.75 0v40M15 0v40M23.25 0v40"/>
   <rect class="lock" x="30" y="15" width="10" height="12" rx="1.5"/><path class="keyhole" d="M35 18.5a1.8 1.8 0 1 1 0 3.6a1.8 1.8 0 1 1 0-3.6M34.2 21.5h1.6l.6 3.5h-2.8z"/></svg>`;
 
-// Pictures for the middle of the Chance and Community Chest squares.
-const DECK_ICONS = {
+// Pictures for the middle of the Chance, Community Chest and station squares.
+const SQUARE_ICONS = {
   chance: `<svg class="icon" viewBox="0 0 24 24"><path d="M8 8.5a4 4 0 1 1 5.6 3.7c-1 .45-1.6 1.3-1.6 2.3v1.5"/><circle class="fill" cx="12" cy="19.5" r="1.4"/></svg>`,
   chest: `<img class="icon" src="chest.png" alt="">`,
+  station: `<img class="icon station" src="train-station.png" alt="">`,
 };
 
 // Where inmates stand in the box, as % of its width: up to 3 to a row, clear of the lock plate, the
@@ -235,12 +236,12 @@ function renderBoard() {
     const here = S.players.filter((p) => !p.bankrupt && p.pos === i && p.id !== moving);
     let html = "";
     if (sp.type === "property") html += `<div class="strip" style="background:${BOARD.colors[sp.group]}"></div>`;
-    const icon = { station: "🚉 ", utility: sp.name.startsWith("Power") ? "💡 " : "🚰 ", tax: "💸 " }[sp.type] || "";
+    const icon = { utility: sp.name.startsWith("Power") ? "💡 " : "🚰 ", tax: "💸 " }[sp.type] || "";
     if (sp.type === "jail") {
       // Jailed players sit inside the cell, behind the bars; visitors stay in the L outside the box.
       html += `<div class="jailbox"><div class="inmates">${inmateDots(here.filter((p) => p.in_jail))}</div>${JAIL_BARS}</div>`;
     } else html += `<div class="nm">${icon}${esc(sp.name)}</div>`;
-    if (DECK_ICONS[sp.type]) html += DECK_ICONS[sp.type];
+    if (SQUARE_ICONS[sp.type]) html += SQUARE_ICONS[sp.type];
     if (sp.type === "go") html += `<svg class="arrow" viewBox="2.5 3 20.5 18"><path d="M21 12H5M12 4.5 4.5 12l7.5 7.5"/></svg>`; // play runs leftward from GO
     if (sp.price) html += `<div class="pr">$${sp.price}</div>`;
     if (sp.type === "tax") html += `<div class="pr">pay $${sp.amount}</div>`;
