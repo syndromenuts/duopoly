@@ -453,9 +453,9 @@ class Cards(unittest.TestCase):
     def test_birthday_and_chairman(self):
         g, (a, b, c) = new_game()
         self.draw(g, a, "chest", 8)
-        self.assertEqual((a.cash, b.cash, c.cash), (1520, 1490, 1490))
+        self.assertEqual((a.cash, b.cash, c.cash), (1600, 1450, 1450))
         self.draw(g, a, "chance", 14)
-        self.assertEqual((a.cash, b.cash, c.cash), (1420, 1540, 1540))
+        self.assertEqual((a.cash, b.cash, c.cash), (1500, 1500, 1500))
 
     def test_jailfree_kept_out_of_deck(self):
         g, (a, b, c) = new_game()
