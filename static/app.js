@@ -466,12 +466,13 @@ async function animateMoves(moves, cards = []) {
   if (run === animateMoves.run) finishRoll();
 }
 
-// Stops on GO to pay the salary on screen, so it shows apart from whatever the move costs after.
+// Stops on GO to pay the salary on screen, and stays until the change has counted in and faded,
+// so it shows apart from whatever the move costs after.
 async function collectGo(pid, landed) {
   const pay = landed && S.rules.double_go ? 400 : 200;
   S = { ...S, players: S.players.map((p) => (p.id === pid ? { ...p, cash: p.cash + pay } : p)) };
   render();
-  await new Promise((r) => setTimeout(r, HOLD_MS));
+  await new Promise((r) => setTimeout(r, HOLD_MS + TALLY_MS + FADE_MS));
 }
 
 // Drops the token and catches the screen up with the state held during the roll.
