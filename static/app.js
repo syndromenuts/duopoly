@@ -291,7 +291,7 @@ function renderBoard() {
 }
 
 const CARD_EASE = "cubic-bezier(.65, 0, .35, 1)"; // ease in and out, firmer than the CSS keyword
-const cardHtml = (c) => `<div class="hd">${c.deck === "chance" ? "CHANCE" : '<img src="chest.png" alt="">COMMUNITY CHEST'}</div><div class="tx">${esc(c.text)}</div>`;
+const cardHtml = (c) => `<div class="hd">${c.deck === "chance" ? "CHANCE" : '<img src="chest.png" alt="">COMMUNITY CHEST'}</div><div class="tx"><p>${esc(c.text)}</p></div>`;
 
 // Each deck shows the front of the latest card from it that finished its flight this turn.
 function renderDecks() {

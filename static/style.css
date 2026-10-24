@@ -148,6 +148,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .face.chest .hd { background: var(--chest); }
 .face .hd img { height: 1.6em; margin: -.3em .3em -.3em 0; vertical-align: middle; }
 .face .tx { flex: 1; display: flex; align-items: center; justify-content: center; padding: .3em .6em; text-align: center; line-height: 1.25; }
+.face .tx p { margin: 0; } /* one flex item, so the tinted amounts flow inline with the text */
 #buy-offer { grid-column: 2 / 11; grid-row: 2 / 11; z-index: 6; display: flex; align-items: center; justify-content: center; padding: 8%;
   background: rgba(0,0,0,.55); } /* covers the middle of the board, dice and decks included */
 #buy-offer > .card { width: 100%; max-width: 340px; margin: 0; text-align: center; font-size: clamp(13px, 1.7vw, 16px); }
