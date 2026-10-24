@@ -14,6 +14,7 @@ h2 { font-size: 16px; margin: 0 0 8px; }
 h3 { font-size: 14px; margin: 0 0 6px; }
 button { font: inherit; padding: 6px 12px; margin: 2px; border: 0; border-radius: var(--radius); background: var(--accent); color: #fff; cursor: pointer; }
 button.secondary { background: var(--raised); color: var(--fg); }
+button.plain { background: none; color: var(--fg); }
 button.danger { background: var(--danger); }
 button.accept { background: var(--build); }
 button.counter, button.warn { background: #e0b81f; color: #222; }

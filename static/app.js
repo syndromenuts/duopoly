@@ -727,7 +727,7 @@ function deedHtml(pos, inSet = false) {
       }
       if (isMortgaged(pos)) {
         if (!m.pending_mortgages.includes(pos)) acts += btn(`Pay off mortgage ($${mv + fee})`, "unmortgage", { pos });
-      } else acts += btn(`Mortgage (+$${mv})`, "mortgage", { pos }, "secondary");
+      } else acts += btn("Mortgage", "mortgage", { pos }, "plain");
     }
   }
   return acts ? html + `<div class="acts">${acts}</div>` : html;
