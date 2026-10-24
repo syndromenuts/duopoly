@@ -243,8 +243,13 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .offer h2 { margin-top: 0; }
 /* the auction popup: the property's card beside the current bid and the bid buttons */
 .modal > .card.auction-card { max-width: 640px; display: flex; flex-wrap: wrap; gap: 16px; border: 2px solid var(--warn); }
-.auction-card > .deed { flex: 1 1 240px; }
+.auction-card > .deed { flex: 1 1 240px; display: flex; flex-direction: column; }
+.auction-card > .deed > table.rent { flex: 1; margin-bottom: 0; } /* the rent rows spread to the bid side's height, no gap below */
 #auction-bid { flex: 1 1 240px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+/* the gavel is a black silhouette, so it's used as a mask and tinted to match the label */
+#auction-bid .gavel { align-self: center; width: 96px; aspect-ratio: 591 / 351; margin-bottom: 8px; background: var(--warn);
+  -webkit-mask: url("gavel.png") center / contain no-repeat; mask: url("gavel.png") center / contain no-repeat; }
+#auction.done .gavel { background: var(--money); }
 #auction-info .label { color: var(--warn); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
 #auction.done .card { border-color: var(--money); }
 #auction.done #auction-info .label { color: var(--money); }
