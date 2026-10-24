@@ -260,16 +260,20 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #auction-info .label { color: var(--warn); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
 #auction.done .card { border-color: var(--money); }
 #auction.done #auction-info .label { color: var(--money); }
+#auction-info .lead { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 14px; margin-bottom: 6px; } /* the bidder beside the bid */
 #auction-info .high { font-size: 3.4em; font-weight: 700; line-height: 1.1; color: var(--money); }
-#auction-info .by { font-size: 1.3em; font-weight: 700; margin-bottom: 6px; }
+#auction-info .by { font-size: 1.3em; font-weight: 700; }
 #auction-info .by .dot { width: 16px; height: 16px; }
 #auction-info .hint { margin-top: 4px; }
+#auction-info .still-in { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; } /* the players still bidding, side by side */
 #auction-controls { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 #auction-controls .line { display: flex; gap: 8px; }
 #auction-controls .line > * { flex: 1; min-width: 0; margin: 0; }
 #auction-controls button { margin: 0; padding: 8px 12px; }
+#auction-controls #bid-amount { width: auto; margin: 0; } /* the amount spans the row of buttons below it */
 #auction-controls [data-inc] { background: none; color: var(--accent); }
-#auction-controls #pass-btn { background: none; color: var(--danger); }
+#auction-controls #bid-btn { background: var(--warn); color: #222; } /* matches the popup's outline */
+#auction-controls #pass-btn { align-self: center; background: none; color: var(--danger); }
 @media (max-width: 560px) { #auction-bid { order: -1; } } /* stacked on a phone, the bid comes before the card */
 .modal > .card.player-card { max-width: 480px; }
 .player-card h2 { margin-top: 0; display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere; }

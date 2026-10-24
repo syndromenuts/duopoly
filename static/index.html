@@ -68,13 +68,11 @@
       <div class="gavel" aria-hidden="true"></div>
       <div id="auction-info"></div>
       <div id="auction-controls">
+        <input id="bid-amount" type="number" min="1" placeholder="Amount">
         <div class="line">
           <button data-inc="1">+$1</button>
           <button data-inc="10">+$10</button>
           <button data-inc="100">+$100</button>
-        </div>
-        <div class="line">
-          <input id="bid-amount" type="number" min="1" placeholder="Amount">
           <button id="bid-btn" class="accept">Bid</button>
         </div>
         <button id="pass-btn" class="danger">Pass</button>

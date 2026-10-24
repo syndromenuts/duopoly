@@ -707,8 +707,9 @@ function renderAuction() {
   if (done) {
     const w = player(done.winner);
     $("auction-info").innerHTML = w
-      ? `<div class="label">Sold</div><div class="high">$${done.high}</div>
-        <div class="by"><span class="dot" style="background:${w.color}"></span> ${esc(w.name)}${w.id === myId ? " (you)" : ""}</div>
+      ? `<div class="label">Sold</div>
+        <div class="lead"><div class="high">$${done.high}</div>
+        <div class="by"><span class="dot" style="background:${w.color}"></span> ${esc(w.name)}${w.id === myId ? " (you)" : ""}</div></div>
         <div class="hint">${w.id === myId ? "You won the auction" : "won the auction"}</div>`
       : `<div class="label">No sale</div><div class="by">Nobody bid</div><div class="hint">It stays with the bank.</div>`;
     $("auction-controls").hidden = true;
@@ -720,13 +721,13 @@ function renderAuction() {
   const others = a.active.filter((id) => id !== a.bidder);
   let status;
   if (leading) status = others.length ? "You're the highest bidder" : "You're winning";
-  else if (inIt) status = a.bidder ? "Outbid them or pass" : "Open the bidding or pass";
-  else status = "You're out of this auction, watching";
+  else if (!inIt) status = "You're out of this auction, watching";
   $("auction-info").innerHTML = `<div class="label">Auction</div>
-    <div class="high">$${a.high}</div>
-    <div class="by">${lead ? `<span class="dot" style="background:${lead.color}"></span> ${esc(lead.name)}${leading ? " (you)" : ""}` : "No bids yet"}</div>
-    <div class="hint">${status}</div>
-    <div class="hint">Still in: ${a.active.map((id) => `<span class="dot" style="background:${player(id)?.color}"></span> ${pname(id)}`).join(", ")}</div>`;
+    <div class="lead"><div class="high">$${a.high}</div>
+    <div class="by">${lead ? `<span class="dot" style="background:${lead.color}"></span> ${esc(lead.name)}${leading ? " (you)" : ""}` : "No bids yet"}</div></div>
+    ${status ? `<div class="hint">${status}</div>` : ""}
+    <div class="hint still-in">${a.active.map((id) => `<span><span class="dot" style="background:${player(id)?.color}"></span> ${pname(id)}</span>`).join("")}</div>
+    ${me() ? `<div class="hint">You have <span class="money">$${me().cash}</span></div>` : ""}`;
 
   $("auction-controls").hidden = !inIt;
   if (!inIt) return;
