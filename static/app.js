@@ -595,11 +595,11 @@ function renderOffer() {
   if (!t) return;
   let title, view, acts = "";
   if (t.to === myId) { // the proposer's form seen from this side: what you'd give on the left, what you'd get on the right
-    title = `Trade offer from ${pname(t.from)}`;
+    title = "Trade offer";
     view = tradeView([myId, "get", t.get], [t.from, "give", t.give], false);
     acts = btn("Accept", "accept_trade", { id: t.id }, "accept") + btn("Counter", "counter", { id: t.id }, "counter") + btn("Reject", "reject_trade", { id: t.id }, "danger");
   } else {
-    title = t.from === myId ? `Your offer to ${pname(t.to)}` : `${pname(t.from)} offers ${pname(t.to)} a trade`;
+    title = t.from === myId ? "Your offer" : "Trade offer";
     view = tradeView([t.from, "give", t.give], [t.to, "get", t.get], false);
     acts = t.from === myId ? btn("Withdraw offer", "reject_trade", { id: t.id }, "danger") : `<div class="hint">Waiting for ${pname(t.to)} to answer.</div>`;
   }
@@ -762,7 +762,7 @@ function tradeSide(who, key, side, editable) {
     html += `<label>Jail cards <input type="number" min="0" max="${p.cards}" value="${side.cards}" data-side="${key}" data-f="cards"${dis}></label>`;
   // Last, so it sits on the bottom edge level with the other side's however many properties each has.
   const max = Math.max(p.cash, side.cash);
-  html += `<div class="trade-cash"><label>Cash $<input type="number" min="0" max="${max}" value="${side.cash}" data-side="${key}" data-f="cash"${dis}></label>
+  html += `<div class="trade-cash"><label>Cash <span class="money">$</span><input class="money" type="number" min="0" max="${max}" value="${side.cash}" data-side="${key}" data-f="cash"${dis}></label>
     ${editable ? `<input type="range" min="0" max="${max}" step="50" value="${side.cash}" data-side="${key}" data-f="cash">` : ""}</div>`;
   return html + `</div>`;
 }

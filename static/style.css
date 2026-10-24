@@ -224,6 +224,7 @@ button.tprop:hover:not(:disabled) { border-color: var(--accent); }
 .tprop.on::after { content: "✓"; position: absolute; top: 0; right: 3px; color: #fff; font-weight: 700; text-shadow: 0 0 3px #000; }
 .trade-view.ro .tprop:not(.on) { opacity: .35; }
 .trade-cash { margin-top: auto; padding-top: 10px; } /* pinned to the bottom, level across both sides */
+.trade-cash input.money, .trade-cash input.money:disabled { color: var(--money); -webkit-text-fill-color: var(--money); }
 .trade-cash input[type=range] { display: block; width: 100%; margin: 4px 0 0; accent-color: var(--money); }
 .trade-side input:disabled { opacity: 1; color: var(--fg); } /* a received offer's amounts stay readable */
 .trade-view.ro input[type=number] { appearance: textfield; } /* no spinner arrows on a received offer */
