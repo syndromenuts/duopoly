@@ -190,6 +190,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .deed .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .deed .acts button { margin: 0; padding: 8px 18px; }
 .deed .acts button.go { background: var(--build); }
+#buy-offer .acts button.danger { background: none; color: var(--danger); }
 .deed .acts .line { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; } /* one row of buttons */
 .steady { display: inline-grid; justify-items: center; } /* both words share one cell, sized to the wider */
 .steady > span { grid-area: 1 / 1; }
