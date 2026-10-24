@@ -243,7 +243,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .deeds > .deed { flex: 0 1 300px; width: 300px; display: flex; flex-direction: column; background: var(--raised); border: 2px solid transparent; border-radius: var(--radius); padding: 8px; }
 .deeds > .deed.on { border-color: var(--accent); }
 .deeds > .deed .acts { margin-top: auto; padding-top: 12px; }
-.modal > .card.offer, .modal > .card.trade-card { max-width: 860px; text-align: center; }
+.modal > .card.offer, .modal > .card.trade-card { max-width: clamp(560px, 100vw - 2 * 292px, 860px); text-align: center; } /* narrowed to leave room for the hovered deed on its left */
 .offer h2 { margin-top: 0; }
 /* the auction popup: the property's card beside the current bid and the bid buttons */
 .modal > .card.auction-card { max-width: 640px; display: flex; flex-wrap: wrap; gap: 16px; border-color: var(--warn); }
@@ -292,6 +292,8 @@ table.rent tr.cur td { background: #3b3518; font-weight: 700; }
 .trade-arrow i { display: block; aspect-ratio: 600 / 59; background: var(--warn); -webkit-mask: url(arrow.png) center / contain no-repeat; mask: url(arrow.png) center / contain no-repeat; } /* tinted, since the art itself is near-black */
 .trade-arrow i.r { transform: scaleX(-1); }
 .trade-props { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.trade-view .trade-props { grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 5px; } /* smaller tiles in a trade, more to a row */
+.trade-view .tprop { font-size: 9.5px; }
 /* a property in a trade: a little title deed, ringed once picked */
 .tprop { position: relative; display: flex; flex-direction: column; margin: 0; padding: 0; overflow: hidden; background: var(--cell); color: var(--cell-fg);
   border: 2px solid transparent; border-radius: var(--radius); font-size: 11px; line-height: 1.15; text-align: center; aspect-ratio: 5 / 7; } /* upright, like a deed */
@@ -317,6 +319,10 @@ button.tprop:hover:not(:disabled) { border-color: var(--accent); }
 .tprop.stack .nm { border-radius: 0 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px); }
 .tprop.stack:not(:has(.strip)) .nm { border-radius: calc(var(--radius) - 2px); }
 .tprop .cnt { position: absolute; right: 3px; bottom: 2px; font-size: .9em; font-weight: 700; opacity: .6; }
+/* the deed of the property hovered in a trade, floated left of the trade's card */
+#trade-deed { position: fixed; z-index: 11; width: 260px; margin: 0; pointer-events: none; border: 6px double #5c636b; }
+#trade-deed[hidden] { display: none; }
+#trade-deed table.rent td.note { white-space: normal; } /* the long note wraps in this narrower deed */
 .trade-cash { margin-top: auto; padding-top: 10px; } /* pinned to the bottom, level across both sides */
 .trade-cash input.money, .trade-cash input.money:disabled { color: var(--money); -webkit-text-fill-color: var(--money); }
 .trade-cash input[type=range] { display: block; width: 100%; margin: 4px 0 0; accent-color: var(--money); }

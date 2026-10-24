@@ -176,6 +176,10 @@ function bindStatic() {
     if (li && e.target === li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); li.click(); }
   };
   $("trade-modal").onclick = (e) => { if (e.target.id === "trade-modal") closeTrade(); };
+  document.body.addEventListener("mouseover", (e) => {
+    const tile = e.target.closest(".trade-view .tprop[data-pos]");
+    if (tile !== showTradeDeed.tile) showTradeDeed(showTradeDeed.tile = tile);
+  });
   $("trade-send").onclick = async () => {
     if (await send("propose_trade", tradeDraft)) closeTrade();
   };
@@ -738,7 +742,7 @@ function renderOffer() {
   const t = S.trades[0];
   const modal = $("offer-modal");
   modal.hidden = !t;
-  if (!t) return;
+  if (!t) return showTradeDeed(showTradeDeed.tile = null);
   // A new offer closes any draft, which would cover it and can't be sent while it's open anyway.
   // Only a new one, so the counter draft opened over the offer it rejects isn't closed by a stale render.
   if (t.id !== seenTrade && tradeDraft) closeTrade();
@@ -827,8 +831,8 @@ function renderProp() {
   $("prop-body").innerHTML = html;
 }
 
-// One space's title deed: its head, price, rent and, for its owner, the build, sell and mortgage buttons.
-function deedHtml(pos) {
+// One space's title deed: its head, price, rent and, for its owner, the build, sell and mortgage buttons (left off when bare).
+function deedHtml(pos, bare = false) {
   const sp = space(pos), owner = ownerOf(pos), h = housesOn(pos);
   let html = propHead(sp);
   if (sp.price) html += owner ? `<div class="hint">Mortgage value</div><div class="price mortgage">$${sp.price / 2}</div>` : `<div class="price">$${sp.price}</div>`;
@@ -849,7 +853,7 @@ function deedHtml(pos) {
     else if (isMortgaged(pos)) html += `<div class="hint"><b>MORTGAGED</b></div>`;
     html += `<div class="hint">${owner ? `Price $${sp.price}` : `Mortgage value <span class="mortgage">$${mv}</span>`}</div>`;
     const m = me();
-    if (owner === myId && S.phase === "playing" && !m.bankrupt) {
+    if (!bare && owner === myId && S.phase === "playing" && !m.bankrupt) {
       if (sp.type === "property") {
         const kind = (b) => steady(b, b === "hotel" ? "house" : "hotel");
         if (h < 5) build += btn(m.pending_build ? `Place auctioned ${m.pending_build}` : `Build ${kind(h === 4 ? "hotel" : "house")} ($${sp.house_cost})`, "build", { pos }, "go");
@@ -890,6 +894,7 @@ function counterTrade(id) {
 
 function closeTrade() {
   $("trade-modal").hidden = true;
+  showTradeDeed(showTradeDeed.tile = null);
   tradeDraft = null;
 }
 
@@ -908,7 +913,7 @@ function tradeSide(who, key, side, editable) {
     const inner = `${kind ? "" : `<span class="strip" style="background:${groupColor(pos)}"></span>`}<span class="nm">${esc(sp.name)}</span>`;
     return editable
       ? `<button type="button" class="${cls}" data-side="${key}" data-pos="${pos}" title="${title}"${locked ? " disabled" : ""}>${inner}</button>`
-      : `<div class="${cls}" title="${title}">${inner}</div>`;
+      : `<div class="${cls}" data-pos="${pos}" title="${title}">${inner}</div>`;
   }).join("") + `</div>`;
   if (!props.length) html += `<div class="hint">No properties.</div>`;
   if (editable ? p.cards : side.cards)
@@ -923,6 +928,19 @@ function tradeSide(who, key, side, editable) {
 // Two halves with a pair of opposing arrows between; each half is [player id, draft key, side].
 const tradeView = (left, right, editable) =>
   `<div class="trade-view${editable ? "" : " ro"}">${tradeSide(...left, editable)}${TRADE_ARROW}${tradeSide(...right, editable)}</div>`;
+
+// Hovering a property in a trade shows its deed just left of the trade's card; hidden where there's no room for it.
+function showTradeDeed(tile) {
+  const box = $("trade-deed");
+  if (!tile) { box.hidden = true; return; }
+  const card = tile.closest(".card").getBoundingClientRect();
+  box.innerHTML = deedHtml(Number(tile.dataset.pos), true);
+  box.hidden = false;
+  const w = box.offsetWidth, gap = 12;
+  if (card.left - gap < w) { box.hidden = true; return; }
+  box.style.left = `${card.left - gap - w}px`;
+  box.style.top = `${Math.max(8, Math.min(card.top, innerHeight - box.offsetHeight - 8))}px`;
+}
 
 function renderTradeForm() {
   $("trade-title").textContent = "Trade";
