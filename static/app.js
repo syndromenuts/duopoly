@@ -537,6 +537,13 @@ function rentTable(sp, cur) {
     `<tr><td colspan="2" class="note">Rent doubles with the full color set (no houses)</td></tr><tr><td>House / hotel cost</td><td>$${sp.house_cost} each</td></tr></table>`;
 }
 
+// The colored name bar atop the buy offer and the property info; stations and utilities take their square's tint.
+function propHead(sp) {
+  const kind = sp.type === "station" ? "station" : sp.type === "utility" ? (sp.name.startsWith("Power") ? "power" : "water") : "";
+  if (kind) return `<div class="prop-head ${kind}">${esc(sp.name)}</div>`;
+  return `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}</div>`;
+}
+
 // The offer to buy the space you landed on, laid over the middle of the board once the roll has played out.
 function renderBuyOffer() {
   const m = me();
@@ -546,7 +553,7 @@ function renderBuyOffer() {
   const sp = space(m.pos);
   const wait = S.blocked ? waitingReason() : "";
   const rent = sp.type === "utility" ? `<div class="hint">Rent 4× the dice, 10× with both utilities</div>` : rentTable(sp, -1);
-  let html = `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}</div>`;
+  let html = propHead(sp);
   html += `<div class="price">$${sp.price}</div>${rent}`;
   html += `<div class="hint">You have $${m.cash}${m.cash >= sp.price ? `, leaving $${m.cash - sp.price}` : ""}.</div>`;
   if (wait) html += `<div class="hint">Waiting: ${wait}</div>`;
@@ -615,7 +622,7 @@ function renderProp() {
   if (openProp == null || !S || S.phase === "lobby") { modal.hidden = true; return; }
   modal.hidden = false;
   const pos = openProp, sp = space(pos), owner = ownerOf(pos), h = housesOn(pos);
-  let html = `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}</div>`;
+  let html = propHead(sp);
   if (sp.price) html += owner ? `<div class="hint">Mortgage value</div><div class="price mortgage">$${sp.price / 2}</div>` : `<div class="price">$${sp.price}</div>`;
   if (sp.type === "property" || sp.type === "station") {
     html += rentTable(sp, owner ? h : -1);
