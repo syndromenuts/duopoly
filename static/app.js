@@ -554,12 +554,16 @@ function renderMe() {
   setRollable(!!m && !m.bankrupt && S.phase === "playing" && myTurn() && !animating && S.stage === "roll" && !(S.blocked && waitingReason()));
   if (!m) {
     box.innerHTML = `<b>You are watching.</b>`;
+    $("status").innerHTML = S.turn ? `<div class="hint">Waiting for ${pname(S.turn)}.</div>` : "";
     $("game-acts").innerHTML = $("trade-act").innerHTML = "";
     return;
   }
   let html = `<div class="me-head"><div><span class="dot" style="background:${m.color}"></span> <b>${esc(m.name)}</b>${m.in_jail ? " · in Jail" : ""}${m.cards ? ` · ${m.cards} Get Out of Jail Free` : ""}</div>`;
   html += `<div class="cash">${cashHtml(m)}</div></div>`;
   html += ownedTiles(m.id);
+  box.innerHTML = html;
+  // Turn prompts and status notices sit in the middle of the board, above the dice.
+  html = "";
   if (m.bankrupt) {
     html += `<div class="notice bad">You are bankrupt.</div>`;
   } else if (S.phase === "playing") {
@@ -588,7 +592,7 @@ function renderMe() {
       html += `<div class="hint">Waiting for ${pname(S.turn)}.</div>`;
     }
   }
-  box.innerHTML = html;
+  $("status").innerHTML = html;
   // The end-game button sits just above the turn list, and Propose trade above the log.
   let acts = "";
   if (S.phase === "playing" && !m.bankrupt) {

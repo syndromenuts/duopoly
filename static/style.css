@@ -153,6 +153,10 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #dev-dice { display: flex; gap: 6px; margin: -6px 0 10px; }
 #dev-dice[hidden] { display: none; }
 #dice-box { position: relative; }
+#status { max-width: 70%; font-size: clamp(12px, 1.6vw, 15px); }
+#status:empty { display: none; }
+#status .notice { text-align: left; color: var(--fg); }
+#status .hint { margin: 4px 0; }
 #center .dice.spent .die { filter: grayscale(1) brightness(.7); opacity: .45; }
 #center .end-turn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 #center .end-turn button { margin: 0; padding: 8px 18px; white-space: nowrap; font-size: clamp(13px, 1.7vw, 16px); animation: end-turn-pulse 1.4s ease-in-out infinite; }
@@ -222,8 +226,8 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #me .cash { font-size: 22px; font-weight: 700; line-height: 1; white-space: nowrap; }
 #me .trade-props { margin: 8px 0 2px; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; } /* five to a row */
 #me .tprop { font-size: 10px; }
-#me .notice, .player-card .notice { background: #3a2c16; border-left: 4px solid var(--warn); padding: 6px 8px; margin: 8px 0; }
-#me .notice.bad, .player-card .notice.bad { background: #3d1c1e; border-left-color: var(--danger); }
+#status .notice, .player-card .notice { background: #3a2c16; border-left: 4px solid var(--warn); padding: 6px 8px; margin: 8px 0; }
+#status .notice.bad, .player-card .notice.bad { background: #3d1c1e; border-left-color: var(--danger); }
 #log { max-height: 220px; overflow-y: auto; font-size: 12px; }
 #log li { padding: 2px 0; border-bottom: 1px solid var(--line-soft); }
 #log-toggle { cursor: pointer; user-select: none; }
