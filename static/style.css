@@ -5,7 +5,7 @@
   --accent: #4a8fd9; --danger: #d64545; --warn: #f0a13a;
   --board: #cfe5cf; --cell: #fbfbf7; --cell-fg: #222; --cell-muted: #555; --cell-line: #4a5058; --mort: #ddd;
   --radius: 4px; /* every box and button, matching the turn list */
-  --build: #1a7f37; --hotel: #c53030; --chance: #ee8a43; --chest: #4482c6;
+  --money: #9be89b; --build: #1a7f37; --hotel: #c53030; --chance: #ee8a43; --chest: #4482c6;
 }
 * { box-sizing: border-box; }
 body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: var(--bg) url("dark-wood-darker.webp") center / cover fixed; color: var(--fg); }
@@ -20,6 +20,9 @@ input, select { font: inherit; padding: 5px; border: 1px solid var(--line); bord
 input[type=number] { width: 90px; }
 label { display: block; margin: 4px 0; }
 .card { background: var(--card); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.money { color: var(--money); }
+#center .money, .face .money { color: var(--build); } /* light green would vanish on the pale board and card faces */
+button:not(.secondary) .money { color: inherit; } /* and on the colored buttons */
 .hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
 .plain { list-style: none; margin: 0; padding: 0; }
 .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; border: 1px solid rgba(255,255,255,.35); }

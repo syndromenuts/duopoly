@@ -683,4 +683,35 @@ function renderTradeForm() {
   });
 }
 
+// ------------------------------------------------------------------ money
+
+// Wraps every dollar amount on the page in a .money span so it can be colored,
+// except on the board squares. Watching the DOM catches every renderer, the log and toasts alike.
+const MONEY = /(\$\d[\d,]*)/;
+function tintMoney(root) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const hits = [];
+  for (let n; (n = walker.nextNode());) if (MONEY.test(n.data) && !n.parentElement.closest(".money, .cell")) hits.push(n);
+  for (const n of hits) {
+    const frag = document.createDocumentFragment();
+    n.data.split(MONEY).forEach((part, i) => {
+      if (!part) return;
+      if (i % 2) {
+        const span = document.createElement("span");
+        span.className = "money";
+        span.textContent = part;
+        frag.append(span);
+      } else frag.append(part);
+    });
+    n.replaceWith(frag);
+  }
+}
+tintMoney(document.body);
+new MutationObserver((muts) => {
+  for (const m of muts) {
+    if (m.type === "characterData") { if (m.target.parentNode) tintMoney(m.target.parentNode); continue; }
+    for (const a of m.addedNodes) if (a.isConnected) tintMoney(a.nodeType === Node.TEXT_NODE ? a.parentNode : a);
+  }
+}).observe(document.body, { childList: true, subtree: true, characterData: true });
+
 init();
