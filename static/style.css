@@ -16,7 +16,7 @@ button { font: inherit; padding: 6px 12px; margin: 2px; border: 0; border-radius
 button.secondary { background: var(--raised); color: var(--fg); }
 button.danger { background: var(--danger); }
 button.accept { background: var(--build); }
-button.counter { background: #e0b81f; color: #222; }
+button.counter, button.warn { background: #e0b81f; color: #222; }
 button:disabled { opacity: .45; cursor: default; }
 input, select { font: inherit; padding: 5px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--raised); color: var(--fg); }
 input[type=number] { width: 90px; }
@@ -43,7 +43,13 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #game { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px; align-items: flex-start; justify-content: center; }
 #board { --B: min(96vw, 94vh, 860px); position: relative; display: grid; grid-template-columns: 1.4fr repeat(9, 1fr) 1.4fr; grid-template-rows: 1.4fr repeat(9, 1fr) 1.4fr;
   width: var(--B); aspect-ratio: 1; background: var(--board); border: 2px solid var(--cell-line); }
-#turns { margin-top: auto; font-size: 20px; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+#game-acts { margin-top: auto; }
+#game-acts .row { display: flex; align-items: center; justify-content: flex-end; }
+#game-acts button.small { padding: 3px 8px; font-size: 13px; }
+#game-acts:not(:empty) { margin-bottom: 8px; }
+#trade-act:not(:empty) { margin-bottom: 10px; }
+#trade-act button { margin: 0; }
+#turns { font-size: 20px; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
 #turns li { height: 64px; overflow: hidden; padding: 6px 12px; line-height: 1.25; border-bottom: 1px solid var(--line); } /* a stats line and one row of chips */
 #turns .who { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 #turns .who .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }

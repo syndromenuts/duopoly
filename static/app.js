@@ -483,6 +483,7 @@ function renderMe() {
   setRollable(!!m && !m.bankrupt && S.phase === "playing" && myTurn() && !animating && S.stage === "roll" && !(S.blocked && waitingReason()));
   if (!m) {
     box.innerHTML = `<b>You are watching.</b>`;
+    $("game-acts").innerHTML = $("trade-act").innerHTML = "";
     return;
   }
   let html = `<div><span class="dot" style="background:${m.color}"></span> <b>${esc(m.name)}</b>${m.in_jail ? " · in Jail" : ""}${m.cards ? ` · ${m.cards} Get Out of Jail Free` : ""}</div>`;
@@ -516,13 +517,16 @@ function renderMe() {
       html += `<div class="hint">Waiting for ${pname(S.turn)}.</div>`;
     }
   }
-  if (S.phase === "playing" && !m.bankrupt) {
-    html += `<div style="margin-top:8px">${btn("Propose trade", "open_trade", {}, "secondary", !!S.auction || !!S.trades.length)}`;
-    html += btn(m.reset_vote ? "Withdraw end-game vote" : "Vote to end game", "vote_reset", null, "secondary") + "</div>";
-    const votes = S.players.filter((p) => p.reset_vote).length;
-    if (votes) html += `<div class="hint">${votes} vote(s) to end the game. Every connected player must vote.</div>`;
-  }
   box.innerHTML = html;
+  // The end-game button sits just above the turn list, and Propose trade above the log.
+  let acts = "";
+  if (S.phase === "playing" && !m.bankrupt) {
+    acts += `<div class="row">` + btn(m.reset_vote ? "Withdraw end-game vote" : "Vote to end game", "vote_reset", null, "danger small") + "</div>";
+    const votes = S.players.filter((p) => p.reset_vote).length;
+    if (votes) acts += `<div class="hint">${votes} vote(s) to end the game. Every connected player must vote.</div>`;
+  }
+  $("game-acts").innerHTML = acts;
+  $("trade-act").innerHTML = S.phase === "playing" && !m.bankrupt ? btn("Propose trade", "open_trade", {}, "warn", !!S.auction || !!S.trades.length) : "";
 }
 
 // A player's properties as deed tiles in board order (so color groups sit together); clicking one opens its dialog.
