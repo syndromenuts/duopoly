@@ -638,11 +638,13 @@ function rentTable(sp, cur) {
 }
 
 // The colored name bar atop the buy offer and the property info; stations and utilities take their square's tint.
+// A street's `h` buildings sit under its name, drawn as on the board; `pad` keeps that row's room when it has none.
 const squareKind = (sp) => (sp.type === "station" ? "station" : sp.type === "utility" ? (sp.name.startsWith("Power") ? "power" : "water") : "");
-function propHead(sp) {
+function propHead(sp, h = 0, pad = false) {
   const kind = squareKind(sp);
   if (kind) return `<div class="prop-head ${kind}">${esc(sp.name)}</div>`;
-  return `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}</div>`;
+  const bld = h || pad ? `<div class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "" : "■".repeat(h)}</div>` : "";
+  return `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}${bld}</div>`;
 }
 
 // The offer to buy the space you landed on, laid over the middle of the board once the roll has played out.
@@ -826,16 +828,17 @@ function renderProp() {
   const sp = space(openProp), owner = ownerOf(openProp);
   const set = sp.price && owner && BOARD.groups[sp.group].every((q) => ownerOf(q) === owner) ? BOARD.groups[sp.group] : [openProp];
   const m = me(), mine = owner === myId && S.phase === "playing" && !m.bankrupt;
-  let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed">${deedHtml(pos)}</div>`).join("")}</div>` : deedHtml(openProp);
+  let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed">${deedHtml(pos, false, set.length > 1 && groupHasBuildings(pos))}</div>`).join("")}</div>` : deedHtml(openProp);
   if (mine && sp.price) html += `<div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;
   $("prop-body").classList.toggle("set", set.length > 1);
   $("prop-body").innerHTML = html;
 }
 
 // One space's title deed: its head, price, rent and, for its owner, the build, sell and mortgage buttons (left off when bare).
-function deedHtml(pos, bare = false) {
+// `pad` leaves room for buildings under the head, so deeds side by side line up when only some are built on.
+function deedHtml(pos, bare = false, pad = false) {
   const sp = space(pos), owner = ownerOf(pos), h = housesOn(pos);
-  let html = propHead(sp);
+  let html = propHead(sp, h, pad);
   if (sp.price) html += owner ? `<div class="hint">Mortgage value</div><div class="price mortgage">$${sp.price / 2}</div>` : `<div class="price">$${sp.price}</div>`;
   if (sp.type === "property" || sp.type === "station") {
     html += rentTable(sp, owner ? h : -1);
@@ -939,7 +942,7 @@ function showHoverDeed(tile) {
   if (room < 260) { box.hidden = true; return; }
   const pos = Number(tile.dataset.pos);
   const set = tile.classList.contains("stack") ? BOARD.groups[space(pos).group] : [pos];
-  box.innerHTML = set.map((q) => `<div class="card deed">${deedHtml(q, true)}</div>`).join("");
+  box.innerHTML = set.map((q) => `<div class="card deed">${deedHtml(q, true, set.length > 1 && groupHasBuildings(q))}</div>`).join("");
   box.style.maxWidth = `${room}px`;
   box.style.left = "0"; // measured from the left edge, so a stale offset doesn't squeeze its width
   box.hidden = false;

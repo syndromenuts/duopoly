@@ -119,10 +119,10 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .cell.jail .toks { bottom: 3px; left: 3px; justify-content: flex-start; flex-wrap: wrap-reverse; z-index: 3; } /* visitors in the L, in front of the box */
 .cell .owner { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; }
 .cell.mort { background: repeating-linear-gradient(45deg, var(--cell), var(--cell) 5px, var(--mort) 5px, var(--mort) 10px); }
-.cell .bld, .tprop .bld { color: var(--build); font-weight: 700; letter-spacing: -1px; line-height: 1; white-space: nowrap;
+.cell .bld, .tprop .bld, .prop-head .bld { color: var(--build); font-weight: 700; letter-spacing: -1px; line-height: 1; white-space: nowrap;
   text-shadow: -1px 0 #1a1a1a, 1px 0 #1a1a1a, 0 -1px #1a1a1a, 0 1px #1a1a1a; } /* outlined so it shows on any strip colour, green and red included */
 .cell .bld:not(.hotel), .tprop .bld:not(.hotel) { font-size: 1.4em; }
-.cell .bld.hotel, .tprop .bld.hotel { width: 50%; height: 65%; box-sizing: border-box; background: var(--hotel); border: 1px solid #1a1a1a; } /* a big red block, drawn rather than spelled out */
+.cell .bld.hotel, .tprop .bld.hotel, .prop-head .bld.hotel { width: 50%; height: 65%; box-sizing: border-box; background: var(--hotel); border: 1px solid #1a1a1a; } /* a big red block, drawn rather than spelled out */
 .cell .toks { position: absolute; bottom: 5px; left: 0; right: 0; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 1px; }
 .cell .toks .dot, .cell .inmates .dot { width: clamp(12px, 2vw, 20px); height: clamp(12px, 2vw, 20px); box-sizing: border-box; border: 3px solid #1a1a1a; margin: 0 -2px;
   box-shadow: 0 2px 5px rgba(0,0,0,.55); }
@@ -279,6 +279,8 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .offer .acts, .trade-card .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .offer .acts button, .trade-card .acts button { margin: 0; }
 .prop-head { padding: 10px; border-radius: var(--radius); color: #fff; font-weight: 700; margin-bottom: 8px; text-shadow: 0 0 3px #000; }
+.prop-head .bld { height: 1em; margin-top: 4px; font-size: 1.9em; letter-spacing: 1px; } /* a fixed height, so an empty row holds the same room */
+.prop-head .bld.hotel { width: 1.26em; height: .6em; margin: calc(4px + .2em) auto .2em; } /* same overall height as a row of houses */
 .prop-head.station, .prop-head.power, .prop-head.water { color: var(--cell-fg); text-shadow: none; } /* light tints, so dark text */
 table.rent { border-collapse: collapse; width: 100%; margin: 6px 0; }
 table.rent td { padding: 2px 4px; border-bottom: 1px solid var(--line-soft); }
