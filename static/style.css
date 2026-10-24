@@ -53,6 +53,9 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #turns .chip { width: 8px; height: 15px; margin-right: 1px; vertical-align: top; } /* narrow enough that all 28 properties fit in one row */
 #turns .chips { height: 17px; margin-top: 5px; line-height: 17px; white-space: nowrap; }
 #turns li:last-child { border-bottom: 0; }
+#turns li[data-act] { cursor: pointer; }
+#turns li[data-act]:hover { background: var(--raised); }
+#turns li.turn[data-act]:hover { background: #4a4220; }
 #turns li.turn { background: #3b3518; box-shadow: inset 4px 0 0 #f6c90e; }
 #turns li.turn .who { font-weight: 700; }
 #turns li.out { opacity: .45; }
@@ -174,8 +177,8 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #me .owned .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #me .owned .bld { color: #4fc46a; font-weight: 700; letter-spacing: -1px; }
 #me .owned .bld.hotel { color: #ff6b6b; }
-#me .notice { background: #3a2c16; border-left: 4px solid var(--warn); padding: 6px 8px; margin: 8px 0; }
-#me .notice.bad { background: #3d1c1e; border-left-color: var(--danger); }
+#me .notice, .player-card .notice { background: #3a2c16; border-left: 4px solid var(--warn); padding: 6px 8px; margin: 8px 0; }
+#me .notice.bad, .player-card .notice.bad { background: #3d1c1e; border-left-color: var(--danger); }
 #log { max-height: 220px; overflow-y: auto; font-size: 12px; }
 #log li { padding: 2px 0; border-bottom: 1px solid var(--line-soft); }
 #auction { border: 2px solid var(--warn); }
@@ -189,6 +192,17 @@ button.trade { display: flex; align-items: center; gap: 6px; width: 100%; margin
 .modal > .card.offer, .modal > .card.trade-card { max-width: 860px; text-align: center; }
 .modal > .card.trade-card.picking { max-width: 360px; }
 .offer h2 { margin-top: 0; }
+.modal > .card.player-card { max-width: 480px; }
+.player-card h2 { margin-top: 0; display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere; }
+.pstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 6px; }
+.pstat { background: var(--raised); border-radius: var(--radius); padding: 6px 10px; font-size: 18px; font-weight: 700; }
+.pstat .hint { margin: 0; font-size: 12px; font-weight: 400; }
+.player-card .trade-props { margin-top: 10px; }
+.tprop .bld { position: absolute; top: 0; left: 0; right: 0; color: #4fc46a; font-weight: 700; letter-spacing: -1px; text-shadow: 0 0 3px #000; }
+.tprop .bld.hotel { color: #ff6b6b; }
+.player-card .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.player-card .acts button { margin: 0; }
+@media (max-width: 400px) { .pstats { grid-template-columns: repeat(2, 1fr); } }
 .offer .acts, .trade-card .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .offer .acts button, .trade-card .acts button { margin: 0; }
 .prop-head { padding: 10px; border-radius: var(--radius); color: #fff; font-weight: 700; margin-bottom: 8px; text-shadow: 0 0 3px #000; }

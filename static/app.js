@@ -14,6 +14,7 @@ let myId = localStorage.getItem("duopoly-id") || "";
 let openProp = null; // board position shown in the property dialog
 let tradeDraft = null;
 let openTradeId = null; // trade shown in the details popup
+let openPlayer = null; // id of the player shown in the player popup
 const laterOffers = new Set(); // incoming trade ids put aside from the center popup
 let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
@@ -161,6 +162,11 @@ function bindStatic() {
 
   $("prop-modal").onclick = (e) => { if (e.target.id === "prop-modal") { openProp = null; renderProp(); } };
   $("detail-modal").onclick = (e) => { if (e.target.id === "detail-modal") closeTradeDetail(); };
+  $("player-modal").onclick = (e) => { if (e.target.id === "player-modal") closePlayer(); };
+  $("turns").onkeydown = (e) => {
+    const li = e.target.closest("li[data-act]");
+    if (li && e.target === li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); li.click(); }
+  };
   $("trade-modal").onclick = (e) => { if (e.target.id === "trade-modal") closeTrade(); };
   document.querySelectorAll(".trade-close").forEach((b) => (b.onclick = closeTrade));
   $("trade-back").onclick = () => openTrade();
@@ -180,6 +186,8 @@ function bindStatic() {
     if (b.dataset.act === "open_trade") return openTrade();
     if (b.dataset.act === "counter") return counterTrade(data.id);
     if (b.dataset.act === "view_trade") { openTradeId = data.id; return renderTradeDetail(); }
+    if (b.dataset.act === "view_player") { openPlayer = data.id; return renderPlayerDetail(); }
+    if (b.dataset.act === "trade_with") { closePlayer(); return openTrade(emptyDraft(data.id)); }
     if (b.id === "dice") { // one roll per click; a refused roll makes the dice clickable again
       setRollable(false);
       return send("roll").then((r) => r || render());
@@ -198,13 +206,14 @@ function render() {
   const inGame = S.phase !== "lobby";
   $("lobby").hidden = inGame;
   $("game").hidden = !inGame;
-  if (!inGame) { $("offer-modal").hidden = $("detail-modal").hidden = true; return renderLobby(); }
+  if (!inGame) { $("offer-modal").hidden = $("detail-modal").hidden = $("player-modal").hidden = true; return renderLobby(); }
   renderBoard();
   renderMe();
   renderBuyOffer();
   renderAuction();
   renderTrades();
   renderPlayers();
+  renderPlayerDetail();
   $("log").innerHTML = S.log.slice().reverse().map((l) => `<li>${esc(l)}</li>`).join("");
   renderProp();
 }
@@ -641,11 +650,55 @@ function renderPlayers() {
     const kick = !p.connected && !p.bankrupt && me() && !me().bankrupt && p.id !== myId
       ? (away >= 120 ? btn("Remove", "kick", { id: p.id }, "danger") : `<span class="hint" title="Can remove in ${120 - away}s">${120 - away}s</span>`) : "";
     // One line of name and stats, one of property chips; the name gives way so the stats and Remove always show.
-    return `<li class="${p.id === S.turn ? "turn" : ""} ${p.bankrupt ? "out" : ""}">
+    return `<li class="${p.id === S.turn ? "turn" : ""} ${p.bankrupt ? "out" : ""}" data-act="view_player" data-arg='${JSON.stringify({ id: p.id })}'
+      role="button" tabindex="0" title="Show ${esc(p.name)}'s details">
       <div class="who"><span class="dot" style="background:${p.color}"></span><span class="nm" title="${esc(p.name)}">${esc(p.name)}${p.id === myId ? " (you)" : ""}</span>
       <span class="st">$${p.cash}${p.in_jail ? " 🔒" : ""}${p.cards ? " 🎫×" + p.cards : ""}${p.connected ? "" : ` <span title="Disconnected">⚠️</span>`} ${kick}</span></div>
       <div class="chips">${chips(ownedBy(p.id))}</div></li>`;
   }).join("");
+}
+
+// One player's standing: status, cash and worth, buildings, debts, and their properties as deed tiles.
+function renderPlayerDetail() {
+  const p = openPlayer && player(openPlayer);
+  const modal = $("player-modal");
+  modal.hidden = !p;
+  if (!p) { openPlayer = null; return; }
+  const props = ownedBy(p.id);
+  let houses = 0, hotels = 0, raise = 0;
+  for (const pos of props) {
+    const sp = space(pos), h = housesOn(pos);
+    if (h === 5) hotels++; else houses += h;
+    if (sp.house_cost) raise += h * sp.house_cost / 2;
+    if (!isMortgaged(pos)) raise += sp.price / 2;
+  }
+  const status = p.bankrupt ? "Bankrupt" : p.in_jail ? `In Jail (attempt ${p.jail_turns + 1} of 3)` : `On ${esc(space(p.pos).name)}`;
+  const extra = [p.id === S.turn && "their turn", !p.connected && `disconnected ${Math.round(p.away + (Date.now() - receivedAt) / 1000)}s`].filter(Boolean);
+  const stat = (label, value) => `<div class="pstat"><div class="hint">${label}</div><div>${value}</div></div>`;
+  let html = `<h2><span class="dot" style="background:${p.color}"></span> ${esc(p.name)}${p.id === myId ? " (you)" : ""}</h2>
+    <div class="hint">${status}${extra.length ? " · " + extra.join(" · ") : ""}</div>
+    <div class="pstats">${stat("Cash", `$${p.cash}`)}${stat("Total worth", `$${p.cash + raise}`)}${stat("Properties", props.length)}
+      ${stat("Houses / hotels", `${houses} / ${hotels}`)}${stat("Mortgaged", props.filter(isMortgaged).length)}${stat("Jail cards", p.cards)}</div>
+    <div class="hint">Total worth is cash plus what selling every building and mortgaging every property would raise.</div>`;
+  for (const d of S.debts.filter((d) => d.debtor === p.id)) html += `<div class="notice bad">Owes <b>$${d.amount}</b> to ${pname(d.creditor)} (${esc(d.reason)}).</div>`;
+  html += props.length ? `<div class="trade-props">` + props.map((pos) => {
+    const sp = space(pos), kind = squareKind(sp), h = housesOn(pos);
+    const bld = h === 5 ? `<span class="bld hotel">H</span>` : h ? `<span class="bld">${"▪".repeat(h)}</span>` : "";
+    return `<button type="button" class="tprop${isMortgaged(pos) ? " m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
+      <span class="strip ${kind}"${kind ? "" : ` style="background:${groupColor(pos)}"`}></span><span class="nm">${esc(sp.name)}</span>${bld}</button>`;
+  }).join("") + `</div>` : `<div class="hint">No properties.</div>`;
+  let acts = "";
+  if (S.phase === "playing" && me() && !me().bankrupt && p.id !== myId && !p.bankrupt && S.order.includes(p.id))
+    acts += btn("Propose trade", "trade_with", { id: p.id }, "", !!S.auction);
+  acts += `<button class="secondary" onclick="closePlayer()">Close</button>`;
+  html += `<div class="acts">${acts}</div>`;
+  const body = $("player-body");
+  if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
+}
+
+function closePlayer() {
+  openPlayer = null;
+  $("player-modal").hidden = true;
 }
 
 function renderProp() {
