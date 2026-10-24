@@ -1034,6 +1034,7 @@ function showMoney(flows, belowCard = false) {
   box.getAnimations({ subtree: true }).forEach((a) => a.cancel());
   box.innerHTML = rows.join("");
   box.classList.toggle("below-card", belowCard);
+  box.classList.toggle("fine", flows.some((f) => f.fine)); // a red rule when a tax square or card takes the money
   box.hidden = false;
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });

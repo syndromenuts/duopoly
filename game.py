@@ -152,21 +152,21 @@ class Game:
 
     # ----------------------------------------------------------------- money
 
-    def flow(self, src, dst, amount, go=False, buy=False):
+    def flow(self, src, dst, amount, go=False, buy=False, fine=False):
         """Record amount moving from src to dst: a player id, None for the bank, or "pot" for Free Parking."""
         if amount <= 0:
             return
         self.flow_id += 1
-        self.flows.append({"id": self.flow_id, "from": src, "to": dst, "amount": amount, "card": self.card_ctx, "go": go, "buy": buy})
+        self.flows.append({"id": self.flow_id, "from": src, "to": dst, "amount": amount, "card": self.card_ctx, "go": go, "buy": buy, "fine": fine})
         del self.flows[:-30]
 
-    def charge(self, pid, amount, creditor=None, pot=False, reason=""):
+    def charge(self, pid, amount, creditor=None, pot=False, reason="", fine=False):
         """Make pid pay amount to creditor (player id) or the bank. Becomes a debt if unaffordable."""
         if amount <= 0:
             return
         p = self.players[pid]
         to_pot = pot and creditor is None and self.rules["free_parking"]
-        debt = {"debtor": pid, "creditor": creditor, "amount": amount, "pot": to_pot, "reason": reason}
+        debt = {"debtor": pid, "creditor": creditor, "amount": amount, "pot": to_pot, "reason": reason, "fine": fine}
         if p.cash >= amount and not any(d["debtor"] == pid for d in self.debts):
             self.pay(debt)
         else:
@@ -176,7 +176,7 @@ class Game:
     def pay(self, debt):
         p = self.players[debt["debtor"]]
         p.cash -= debt["amount"]
-        self.flow(p.id, debt["creditor"] or ("pot" if debt["pot"] else None), debt["amount"])
+        self.flow(p.id, debt["creditor"] or ("pot" if debt["pot"] else None), debt["amount"], fine=debt.get("fine", False))
         if debt["creditor"]:
             self.players[debt["creditor"]].cash += debt["amount"]
         elif debt["pot"]:
@@ -248,7 +248,7 @@ class Game:
                 else:
                     self.charge(p.id, self.rent(pos, dice_total, mode), owner, reason=f"rent for {sp['name']}")
         elif t == "tax":
-            self.charge(p.id, sp["amount"], None, pot=True, reason=sp["name"])
+            self.charge(p.id, sp["amount"], None, pot=True, reason=sp["name"], fine=True)
         elif t in ("chance", "chest"):
             return self.draw(p, t)
         elif t == "gotojail":
@@ -315,14 +315,14 @@ class Game:
                 p.cash += eff[1]
                 self.flow(None, p.id, eff[1])
             else:
-                self.charge(p.id, -eff[1], None, pot=True, reason="card")
+                self.charge(p.id, -eff[1], None, pot=True, reason="card", fine=True)
         elif op == "repairs":
             mine = [self.houses.get(q, 0) for q in self.owned_by(p.id)]
             cost = sum(eff[1] * h for h in mine if h < 5) + sum(eff[2] for h in mine if h == 5)
-            self.charge(p.id, cost, None, pot=True, reason="repairs")
+            self.charge(p.id, cost, None, pot=True, reason="repairs", fine=True)
         elif op == "pay_each":
             for o in others:
-                self.charge(p.id, eff[1], o.id, reason="chairman of the board")
+                self.charge(p.id, eff[1], o.id, reason="chairman of the board", fine=True)
         elif op == "collect_each":
             for o in others:
                 self.charge(o.id, eff[1], p.id, reason="birthday")
@@ -370,7 +370,7 @@ class Game:
             self.say(f"{p.name} failed a third time and must pay $50 to leave Jail.")
             p.in_jail = False
             p.jail_turns = 0
-            self.charge(p.id, 50, None, pot=True, reason="jail fine")
+            self.charge(p.id, 50, None, pot=True, reason="jail fine", fine=True)
             return self.move(p, total)
         if doubles:
             self.doubles += 1
@@ -388,7 +388,7 @@ class Game:
             raise GameError("You are not in Jail.")
         if p.cash < 50:
             raise GameError("You need $50. Raise funds first.")
-        self.charge(p.id, 50, None, pot=True, reason="jail fine")
+        self.charge(p.id, 50, None, pot=True, reason="jail fine", fine=True)
         p.in_jail = False
         p.jail_turns = 0
 
