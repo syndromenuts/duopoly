@@ -13,6 +13,7 @@ let token = localStorage.getItem("duopoly-token") || "";
 let myId = localStorage.getItem("duopoly-id") || "";
 let openProp = null; // board position shown in the property dialog
 let tradeDraft = null;
+let seenTrade = null; // id of the open trade already put on screen
 let openPlayer = null; // id of the player shown in the player popup
 let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
@@ -620,7 +621,10 @@ function renderOffer() {
   const modal = $("offer-modal");
   modal.hidden = !t;
   if (!t) return;
-  if (t.to === myId && tradeDraft) closeTrade(); // a draft of your own would cover the offer, and can't be sent while it's open anyway
+  // A new offer closes any draft, which would cover it and can't be sent while it's open anyway.
+  // Only a new one, so the counter draft opened over the offer it rejects isn't closed by a stale render.
+  if (t.id !== seenTrade && tradeDraft) closeTrade();
+  seenTrade = t.id;
   let title, view, acts = "";
   if (t.to === myId) { // the proposer's form seen from this side: what you'd give on the left, what you'd get on the right
     title = "Trade offer";
