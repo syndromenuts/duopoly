@@ -528,6 +528,15 @@ function ownedList(id) {
   }).join("") + `</ul>`;
 }
 
+// Rent by house level for a street, or by stations owned for a station; row `cur` is highlighted.
+function rentTable(sp, cur) {
+  if (sp.type === "station")
+    return `<table class="rent"><tr><td>1 station</td><td>$25</td></tr><tr><td>2 stations</td><td>$50</td></tr><tr><td>3 stations</td><td>$100</td></tr><tr><td>4 stations</td><td>$200</td></tr></table>`;
+  const labels = ["Rent", "With 1 house", "With 2 houses", "With 3 houses", "With 4 houses", "With hotel"];
+  return `<table class="rent">` + sp.rent.map((r, i) => `<tr class="${i === cur ? "cur" : ""}"><td>${labels[i]}</td><td>$${r}</td></tr>`).join("") +
+    `<tr><td colspan="2" class="note">Rent doubles with the full color set (no houses)</td></tr><tr><td>House / hotel cost</td><td>$${sp.house_cost} each</td></tr></table>`;
+}
+
 // The offer to buy the space you landed on, laid over the middle of the board once the roll has played out.
 function renderBuyOffer() {
   const m = me();
@@ -536,10 +545,9 @@ function renderBuyOffer() {
   if (box.hidden) return;
   const sp = space(m.pos);
   const wait = S.blocked ? waitingReason() : "";
-  const rent = sp.type === "property" ? `Rent $${sp.rent[0]}, doubled with the full color set`
-    : sp.type === "station" ? "Rent $25 to $200, by stations owned" : "Rent 4× the dice, 10× with both utilities";
+  const rent = sp.type === "utility" ? `<div class="hint">Rent 4× the dice, 10× with both utilities</div>` : rentTable(sp, -1);
   let html = `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}</div>`;
-  html += `<div class="price">$${sp.price}</div><div class="hint">${rent}</div>`;
+  html += `<div class="price">$${sp.price}</div>${rent}`;
   html += `<div class="hint">You have $${m.cash}${m.cash >= sp.price ? `, leaving $${m.cash - sp.price}` : ""}.</div>`;
   if (wait) html += `<div class="hint">Waiting: ${wait}</div>`;
   else if (m.cash < sp.price) html += `<div class="hint">Not enough cash. You can mortgage or sell to raise it.</div>`;
@@ -608,12 +616,8 @@ function renderProp() {
   modal.hidden = false;
   const pos = openProp, sp = space(pos), owner = ownerOf(pos), h = housesOn(pos);
   let html = `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}</div>`;
-  if (sp.type === "property") {
-    const labels = ["Rent", "With 1 house", "With 2 houses", "With 3 houses", "With 4 houses", "With hotel"];
-    html += `<table class="rent">` + sp.rent.map((r, i) => `<tr class="${owner && i === h ? "cur" : ""}"><td>${labels[i]}</td><td>$${r}</td></tr>`).join("") +
-      `<tr><td>Rent doubles with the full color set (no houses)</td><td></td></tr><tr><td>House / hotel cost</td><td>$${sp.house_cost} each</td></tr></table>`;
-  } else if (sp.type === "station") {
-    html += `<table class="rent"><tr><td>1 station</td><td>$25</td></tr><tr><td>2 stations</td><td>$50</td></tr><tr><td>3 stations</td><td>$100</td></tr><tr><td>4 stations</td><td>$200</td></tr></table>`;
+  if (sp.type === "property" || sp.type === "station") {
+    html += rentTable(sp, owner ? h : -1);
   } else if (sp.type === "utility") {
     html += `<p>Rent is 4× the dice roll if one utility is owned, 10× if both are owned.</p>`;
   } else {

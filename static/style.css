@@ -155,6 +155,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
   background: rgba(0,0,0,.55); } /* covers the middle of the board, dice and decks included */
 #buy-offer > .card { width: 100%; max-width: 340px; margin: 0; text-align: center; font-size: clamp(13px, 1.7vw, 16px); }
 #buy-offer .price { font-size: 2em; font-weight: 700; }
+#buy-offer table.rent { text-align: left; font-size: .9em; }
 #buy-offer .acts { margin-top: 12px; display: flex; gap: 8px; justify-content: center; }
 #buy-offer .acts button { margin: 0; padding: 8px 18px; }
 #buy-offer .acts button.go { background: var(--build); }
@@ -182,7 +183,8 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .prop-head { padding: 10px; border-radius: var(--radius); color: #fff; font-weight: 700; margin-bottom: 8px; text-shadow: 0 0 3px #000; }
 table.rent { border-collapse: collapse; width: 100%; margin: 6px 0; }
 table.rent td { padding: 2px 4px; border-bottom: 1px solid var(--line-soft); }
-table.rent td:last-child { text-align: right; }
+table.rent td:last-child { text-align: right; white-space: nowrap; }
+table.rent td.note { text-align: left; white-space: nowrap; }
 table.rent tr.cur td { background: #3b3518; font-weight: 700; }
 .trade-cols { display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
 .trade-cols > div { flex: 1 1 200px; }
