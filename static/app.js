@@ -159,10 +159,9 @@ function bindStatic() {
   });
 
   $("prop-modal").onclick = (e) => { if (e.target.id === "prop-modal") { openProp = null; renderProp(); } };
-  $("offer-modal").onclick = (e) => { if (e.target.id === "offer-modal") laterOffer(); };
   $("trade-modal").onclick = (e) => { if (e.target.id === "trade-modal") closeTrade(); };
-  $("trade-close").onclick = closeTrade;
-  $("trade-partner").onchange = (e) => { tradeDraft = emptyDraft(e.target.value); renderTradeForm(); };
+  document.querySelectorAll(".trade-close").forEach((b) => (b.onclick = closeTrade));
+  $("trade-back").onclick = () => openTrade();
   $("trade-send").onclick = async () => {
     if (await send("propose_trade", tradeDraft)) closeTrade();
   };
@@ -176,9 +175,8 @@ function bindStatic() {
     const b = e.target.closest("[data-act]");
     if (!b) return;
     const data = b.dataset.arg ? JSON.parse(b.dataset.arg) : {};
-    if (b.dataset.act === "open_trade") return openTrade(data);
+    if (b.dataset.act === "open_trade") return openTrade();
     if (b.dataset.act === "counter") return counterTrade(data.id);
-    if (b.dataset.act === "later") return laterOffer();
     if (b.id === "dice") { // one roll per click; a refused roll makes the dice clickable again
       setRollable(false);
       return send("roll").then((r) => r || render());
@@ -541,8 +539,9 @@ function rentTable(sp, cur) {
 }
 
 // The colored name bar atop the buy offer and the property info; stations and utilities take their square's tint.
+const squareKind = (sp) => (sp.type === "station" ? "station" : sp.type === "utility" ? (sp.name.startsWith("Power") ? "power" : "water") : "");
 function propHead(sp) {
-  const kind = sp.type === "station" ? "station" : sp.type === "utility" ? (sp.name.startsWith("Power") ? "power" : "water") : "";
+  const kind = squareKind(sp);
   if (kind) return `<div class="prop-head ${kind}">${esc(sp.name)}</div>`;
   return `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}</div>`;
 }
@@ -608,7 +607,7 @@ function tradeText(t) {
 }
 
 const offerButtons = (t) =>
-  btn("Accept", "accept_trade", { id: t.id }) + btn("Counter", "counter", { id: t.id }, "secondary") + btn("Reject", "reject_trade", { id: t.id }, "secondary");
+  btn("Accept", "accept_trade", { id: t.id }, "accept") + btn("Counter", "counter", { id: t.id }, "counter") + btn("Reject", "reject_trade", { id: t.id }, "danger");
 
 // The oldest incoming offer not yet put aside pops up in the middle of the screen.
 function renderOffer() {
@@ -616,17 +615,11 @@ function renderOffer() {
   const modal = $("offer-modal");
   modal.hidden = !t;
   if (!t) return;
-  const html = `<h2>Trade offer</h2><div class="trade-text">${tradeText(t)}</div>
-    <div class="acts">${offerButtons(t)}${btn("Later", "later", null, "secondary")}</div>`;
+  // The proposer's form seen from this side: what you'd give on the left, what you'd get on the right.
+  const html = `<h2>Trade offer</h2>${tradeView([myId, "get", t.get], [t.from, "give", t.give], false)}
+    <div class="acts">${offerButtons(t)}</div>`;
   const body = $("offer-body");
   if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
-  modal.dataset.id = t.id;
-}
-
-// Leaves the shown offer in the Trades panel without the popup.
-function laterOffer() {
-  laterOffers.add(Number($("offer-modal").dataset.id));
-  renderOffer();
 }
 
 function renderPlayers() {
@@ -692,13 +685,22 @@ function emptyDraft(to) {
   return { to, give: { cash: 0, props: [], cards: 0 }, get: { cash: 0, props: [], cards: 0 } };
 }
 
-function openTrade() {
+// Opens the trade popup: first a list of players to trade with, or straight to the form for a ready draft.
+function openTrade(draft = null) {
   const others = S.players.filter((p) => p.id !== myId && !p.bankrupt && S.order.includes(p.id));
   if (!others.length) return;
-  $("trade-partner").innerHTML = others.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
-  tradeDraft = emptyDraft(others[0].id);
-  renderTradeForm();
   $("trade-modal").hidden = false;
+  $("trade-pick").hidden = !!draft;
+  $("trade-form").hidden = !draft;
+  $("trade-modal").firstElementChild.classList.toggle("picking", !draft);
+  if (draft) {
+    tradeDraft = draft;
+    return renderTradeForm();
+  }
+  tradeDraft = null;
+  $("trade-players").innerHTML = others.map((p) => `<li><button type="button" class="secondary" data-to="${p.id}">
+    <span class="dot" style="background:${p.color}"></span><span class="nm">${esc(p.name)}</span><span>$${p.cash}</span></button></li>`).join("");
+  $("trade-players").querySelectorAll("[data-to]").forEach((b) => (b.onclick = () => openTrade(emptyDraft(b.dataset.to))));
 }
 
 function counterTrade(id) {
@@ -706,11 +708,8 @@ function counterTrade(id) {
   if (!t) return;
   laterOffers.add(id);
   renderOffer();
-  openTrade();
   send("reject_trade", { id });
-  $("trade-partner").value = t.from;
-  tradeDraft = { to: t.from, give: structuredClone(t.get), get: structuredClone(t.give) };
-  renderTradeForm();
+  openTrade({ to: t.from, give: structuredClone(t.get), get: structuredClone(t.give) });
 }
 
 function closeTrade() {
@@ -718,27 +717,54 @@ function closeTrade() {
   tradeDraft = null;
 }
 
+const TRADE_ARROW = `<svg class="trade-arrow" viewBox="0 0 48 24" aria-hidden="true"><path d="M3 12h42M11 4l-8 8 8 8M37 4l8 8-8 8"/></svg>`;
+
+// One player's half of a trade: their properties as tiles (picked ones ringed) over the cash they put in.
+function tradeSide(who, key, side, editable) {
+  const p = player(who);
+  const props = ownedBy(who);
+  const dis = editable ? "" : " disabled";
+  let html = `<div class="trade-side"><h3><span class="dot" style="background:${p.color}"></span> ${who === myId ? "You" : esc(p.name)}</h3>`;
+  html += `<div class="trade-props">` + props.map((pos) => {
+    const sp = space(pos), kind = squareKind(sp), locked = groupHasBuildings(pos);
+    const cls = `tprop${side.props.includes(pos) ? " on" : ""}${isMortgaged(pos) ? " m" : ""}`;
+    const title = locked ? "Sell the group's buildings before trading it" : isMortgaged(pos) ? "Mortgaged" : "";
+    const inner = `<span class="strip ${kind}"${kind ? "" : ` style="background:${groupColor(pos)}"`}></span><span class="nm">${esc(sp.name)}</span>`;
+    return editable
+      ? `<button type="button" class="${cls}" data-side="${key}" data-pos="${pos}" title="${title}"${locked ? " disabled" : ""}>${inner}</button>`
+      : `<div class="${cls}" title="${title}">${inner}</div>`;
+  }).join("") + `</div>`;
+  if (!props.length) html += `<div class="hint">No properties.</div>`;
+  if (editable ? p.cards : side.cards)
+    html += `<label>Jail cards <input type="number" min="0" max="${p.cards}" value="${side.cards}" data-side="${key}" data-f="cards"${dis}></label>`;
+  // Last, so it sits on the bottom edge level with the other side's however many properties each has.
+  const max = Math.max(p.cash, side.cash);
+  html += `<div class="trade-cash"><label>Cash $<input type="number" min="0" max="${max}" value="${side.cash}" data-side="${key}" data-f="cash"${dis}></label>
+    ${editable ? `<input type="range" min="0" max="${max}" step="50" value="${side.cash}" data-side="${key}" data-f="cash">` : ""}</div>`;
+  return html + `</div>`;
+}
+
+// Two halves with a double arrow between; each half is [player id, draft key, side].
+const tradeView = (left, right, editable) =>
+  `<div class="trade-view${editable ? "" : " ro"}">${tradeSide(...left, editable)}${TRADE_ARROW}${tradeSide(...right, editable)}</div>`;
+
 function renderTradeForm() {
-  const sideForm = (who, key) => {
-    const p = player(who);
-    const side = tradeDraft[key];
-    const props = ownedBy(who).filter((pos) => !groupHasBuildings(pos));
-    let html = `<label>Cash $<input type="number" min="0" max="${p.cash}" value="${side.cash}" data-side="${key}" data-f="cash"></label>`;
-    html += props.map((pos) => `<label><input type="checkbox" data-side="${key}" data-pos="${pos}"${side.props.includes(pos) ? " checked" : ""}>
-      <span class="chip" style="background:${groupColor(pos)}"></span>${esc(space(pos).name)}${isMortgaged(pos) ? " (mortgaged)" : ""}</label>`).join("");
-    if (!props.length) html += `<div class="hint">No tradable properties (groups with buildings can't be traded).</div>`;
-    if (p.cards) html += `<label>Jail cards <input type="number" min="0" max="${p.cards}" value="${side.cards}" data-side="${key}" data-f="cards"></label>`;
-    return html;
-  };
-  $("trade-give").innerHTML = sideForm(myId, "give");
-  $("trade-get").innerHTML = sideForm(tradeDraft.to, "get");
-  document.querySelectorAll("#trade-modal [data-side]").forEach((el) => {
+  $("trade-title").innerHTML = `Trade with ${pname(tradeDraft.to)}`;
+  const view = $("trade-view");
+  view.innerHTML = tradeView([myId, "give", tradeDraft.give], [tradeDraft.to, "get", tradeDraft.get], true);
+  view.querySelectorAll("[data-pos]").forEach((b) => {
+    b.onclick = () => {
+      const side = tradeDraft[b.dataset.side], pos = Number(b.dataset.pos);
+      side.props = side.props.includes(pos) ? side.props.filter((x) => x !== pos) : [...side.props, pos];
+      b.classList.toggle("on", side.props.includes(pos));
+    };
+  });
+  // The cash box and its slider stay in step.
+  view.querySelectorAll("[data-f]").forEach((el) => {
     el.oninput = () => {
       const side = tradeDraft[el.dataset.side];
-      if (el.dataset.pos) {
-        const pos = Number(el.dataset.pos);
-        side.props = el.checked ? [...side.props, pos] : side.props.filter((x) => x !== pos);
-      } else side[el.dataset.f] = Number(el.value) || 0;
+      side[el.dataset.f] = Math.max(0, Number(el.value) || 0);
+      view.querySelectorAll(`[data-side="${el.dataset.side}"][data-f="${el.dataset.f}"]`).forEach((o) => { if (o !== el) o.value = side[el.dataset.f]; });
     };
   });
 }

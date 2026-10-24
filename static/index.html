@@ -72,15 +72,21 @@
 <div id="offer-modal" class="modal" hidden><div class="card offer" id="offer-body"></div></div>
 
 <div id="trade-modal" class="modal" hidden>
-  <div class="card">
-    <h2>Propose a trade</h2>
-    <label>With <select id="trade-partner"></select></label>
-    <div class="trade-cols">
-      <div><h3>You give</h3><div id="trade-give"></div></div>
-      <div><h3>You get</h3><div id="trade-get"></div></div>
+  <div class="card trade-card">
+    <div id="trade-pick">
+      <h2>Trade with…</h2>
+      <ul id="trade-players" class="plain"></ul>
+      <div class="acts"><button class="secondary trade-close">Cancel</button></div>
     </div>
-    <button id="trade-send">Send offer</button>
-    <button id="trade-close" class="secondary">Close</button>
+    <div id="trade-form" hidden>
+      <h2 id="trade-title"></h2>
+      <div id="trade-view"></div>
+      <div class="acts">
+        <button id="trade-send">Offer trade</button>
+        <button id="trade-back" class="secondary">Back</button>
+        <button class="secondary trade-close">Cancel</button>
+      </div>
+    </div>
   </div>
 </div>
 

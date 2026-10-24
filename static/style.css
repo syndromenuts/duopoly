@@ -15,6 +15,8 @@ h3 { font-size: 14px; margin: 0 0 6px; }
 button { font: inherit; padding: 6px 12px; margin: 2px; border: 0; border-radius: var(--radius); background: var(--accent); color: #fff; cursor: pointer; }
 button.secondary { background: var(--raised); color: var(--fg); }
 button.danger { background: var(--danger); }
+button.accept { background: var(--build); }
+button.counter { background: #e0b81f; color: #222; }
 button:disabled { opacity: .45; cursor: default; }
 input, select { font: inherit; padding: 5px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--raised); color: var(--fg); }
 input[type=number] { width: 90px; }
@@ -71,9 +73,9 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .cell.chest { background: var(--chest); color: #fff; }
 .cell.parking { background: #bfe3f5; }
 .cell.gotojail { background: #868b93; }
-.cell.station, .prop-head.station { background: #b8d8d6; } /* light tint of the sign's teal (#01726e) */
-.cell.power, .prop-head.power { background: #fbf1c2; } /* light tint of the bulb's yellow */
-.cell.water, .prop-head.water { background: #d4e9f7; } /* light tint of the drop's blue */
+.cell.station, .prop-head.station, .tprop .station { background: #b8d8d6; } /* light tint of the sign's teal (#01726e) */
+.cell.power, .prop-head.power, .tprop .power { background: #fbf1c2; } /* light tint of the bulb's yellow */
+.cell.water, .prop-head.water, .tprop .water { background: #d4e9f7; } /* light tint of the drop's blue */
 .cell.tax { background: #eba59d; } /* light red */
 .cell .icon { width: 55%; height: auto; max-height: 50%; margin: auto 0; transform: translateY(-15%); flex: none; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .cell .icon .fill { fill: currentColor; stroke: none; }
@@ -184,10 +186,11 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .modal[hidden] { display: none; }
 .modal > .card { max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; }
 .modal > .card.deed { max-width: 340px; }
-.modal > .card.offer { max-width: 400px; text-align: center; }
+.modal > .card.offer, .modal > .card.trade-card { max-width: 860px; text-align: center; }
+.modal > .card.trade-card.picking { max-width: 360px; }
 .offer h2 { margin-top: 0; }
-.offer .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-.offer .acts button { margin: 0; }
+.offer .acts, .trade-card .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.offer .acts button, .trade-card .acts button { margin: 0; }
 .prop-head { padding: 10px; border-radius: var(--radius); color: #fff; font-weight: 700; margin-bottom: 8px; text-shadow: 0 0 3px #000; }
 .prop-head.station, .prop-head.power, .prop-head.water { color: var(--cell-fg); text-shadow: none; } /* light tints, so dark text */
 table.rent { border-collapse: collapse; width: 100%; margin: 6px 0; }
@@ -195,9 +198,33 @@ table.rent td { padding: 2px 4px; border-bottom: 1px solid var(--line-soft); }
 table.rent td:last-child { text-align: right; white-space: nowrap; }
 table.rent td.note { text-align: left; white-space: nowrap; }
 table.rent tr.cur td { background: #3b3518; font-weight: 700; }
-.trade-cols { display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
-.trade-cols > div { flex: 1 1 200px; }
-.trade-cols label { font-size: 13px; }
+#trade-players li { margin: 4px 0; }
+#trade-players button { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0; padding: 10px 12px; font-size: 16px; text-align: left; }
+#trade-players .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trade-view { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; text-align: left; }
+.trade-side { display: flex; flex-direction: column; min-width: 0; background: var(--raised); border-radius: var(--radius); padding: 10px; }
+.trade-arrow { align-self: center; width: 72px; fill: none; stroke: var(--warn); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.trade-props { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+/* a property in a trade: a little title deed, ringed once picked */
+.tprop { position: relative; display: flex; flex-direction: column; margin: 0; padding: 0; overflow: hidden; background: var(--cell); color: var(--cell-fg);
+  border: 2px solid transparent; border-radius: var(--radius); font-size: 11px; line-height: 1.15; text-align: center; aspect-ratio: 5 / 7; } /* upright, like a deed */
+button.tprop { cursor: pointer; }
+button.tprop:hover:not(:disabled) { border-color: var(--accent); }
+.tprop .strip { height: 22%; flex: none; }
+.tprop .nm { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4px 3px; overflow-wrap: anywhere; }
+.tprop.m .nm { background: repeating-linear-gradient(45deg, var(--cell), var(--cell) 5px, var(--mort) 5px, var(--mort) 10px); }
+.tprop.on, button.tprop.on:hover { border-color: var(--warn); box-shadow: 0 0 0 2px var(--warn); }
+.tprop.on::after { content: "✓"; position: absolute; top: 0; right: 3px; color: #fff; font-weight: 700; text-shadow: 0 0 3px #000; }
+.trade-view.ro .tprop:not(.on) { opacity: .35; }
+.trade-cash { margin-top: auto; padding-top: 10px; } /* pinned to the bottom, level across both sides */
+.trade-cash input[type=range] { display: block; width: 100%; margin: 4px 0 0; accent-color: var(--money); }
+.trade-side input:disabled { opacity: 1; color: var(--fg); } /* a received offer's amounts stay readable */
+.trade-view.ro input[type=number] { appearance: textfield; } /* no spinner arrows on a received offer */
+.trade-view.ro input[type=number]::-webkit-inner-spin-button, .trade-view.ro input[type=number]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+@media (max-width: 640px) {
+  .trade-view { grid-template-columns: 1fr; }
+  .trade-arrow { justify-self: center; width: 48px; transform: rotate(90deg); }
+}
 
 #toast { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: var(--danger); color: #fff; padding: 8px 14px; border-radius: var(--radius); z-index: 20; max-width: 90vw; }
 #toast[hidden] { display: none; }
