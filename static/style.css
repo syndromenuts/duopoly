@@ -199,6 +199,12 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .modal[hidden] { display: none; }
 .modal > .card { max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; }
 .modal > .card.deed { max-width: 340px; }
+.modal > .card.deed.set { max-width: 1000px; }
+/* a whole color set: its deeds side by side, the one clicked ringed */
+.deeds { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.deeds > .deed { flex: 1 1 220px; max-width: 300px; display: flex; flex-direction: column; background: var(--raised); border: 2px solid transparent; border-radius: var(--radius); padding: 8px; }
+.deeds > .deed.on { border-color: var(--accent); }
+.deeds > .deed .acts { margin-top: auto; padding-top: 12px; }
 .modal > .card.offer, .modal > .card.trade-card { max-width: 860px; text-align: center; }
 .offer h2 { margin-top: 0; }
 .modal > .card.player-card { max-width: 480px; }

@@ -686,7 +686,22 @@ function renderProp() {
   const modal = $("prop-modal");
   if (openProp == null || !S || S.phase === "lobby") { modal.hidden = true; return; }
   modal.hidden = false;
-  const pos = openProp, sp = space(pos), owner = ownerOf(pos), h = housesOn(pos);
+  // A street in a color set one player owns whole opens the set's deeds side by side.
+  const sp = space(openProp), owner = ownerOf(openProp);
+  const set = sp.type === "property" && owner && BOARD.groups[sp.group].every((q) => ownerOf(q) === owner) ? BOARD.groups[sp.group] : [openProp];
+  const m = me(), mine = owner === myId && S.phase === "playing" && !m.bankrupt;
+  let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed${pos === openProp ? " on" : ""}">${deedHtml(pos, true)}</div>`).join("")}</div>` : deedHtml(openProp);
+  if (mine && sp.price) html += `<div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;
+  const sellAll = mine && set.length > 1 && groupHasBuildings(openProp) ? btn("Sell all in group", "sell_all", { pos: openProp }, "secondary") : "";
+  html += `<div class="acts">${sellAll}<button class="secondary" onclick="openProp=null;renderProp()">Close</button></div>`;
+  $("prop-body").classList.toggle("set", set.length > 1);
+  $("prop-body").innerHTML = html;
+}
+
+// One space's title deed: its head, price, rent and, for its owner, the build and mortgage buttons
+// (Sell all in group too, unless it shows in a set, where that button sits once under the deeds).
+function deedHtml(pos, inSet = false) {
+  const sp = space(pos), owner = ownerOf(pos), h = housesOn(pos);
   let html = propHead(sp);
   if (sp.price) html += owner ? `<div class="hint">Mortgage value</div><div class="price mortgage">$${sp.price / 2}</div>` : `<div class="price">$${sp.price}</div>`;
   if (sp.type === "property" || sp.type === "station") {
@@ -709,17 +724,14 @@ function renderProp() {
       if (sp.type === "property") {
         if (h < 5) acts += btn(m.pending_build ? `Place auctioned ${m.pending_build}` : `Build ${h === 4 ? "hotel" : "house"} ($${sp.house_cost})`, "build", { pos }, "go");
         if (h) acts += btn(`Sell ${h === 5 ? "hotel" : "house"} (+$${sp.house_cost / 2})`, "sell_building", { pos }, "secondary");
-        if (groupHasBuildings(pos)) acts += btn("Sell all in group", "sell_all", { pos }, "secondary");
+        if (!inSet && groupHasBuildings(pos)) acts += btn("Sell all in group", "sell_all", { pos }, "secondary");
       }
       if (isMortgaged(pos)) {
         if (!m.pending_mortgages.includes(pos)) acts += btn(`Pay off mortgage ($${mv + fee})`, "unmortgage", { pos });
       } else acts += btn(`Mortgage (+$${mv})`, "mortgage", { pos }, "secondary");
-      html += `<div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;
     }
   }
-  acts += `<button class="secondary" onclick="openProp=null;renderProp()">Close</button>`;
-  html += `<div class="acts">${acts}</div>`;
-  $("prop-body").innerHTML = html;
+  return acts ? html + `<div class="acts">${acts}</div>` : html;
 }
 
 // ------------------------------------------------------------------ trading
