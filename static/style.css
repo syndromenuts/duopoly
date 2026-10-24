@@ -201,6 +201,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
   box-shadow: 0 4px 14px rgba(0,0,0,.55); font-size: clamp(11px, 1.9vw, 18px); }
 #money[hidden] { display: none; }
 #money.fine { border: 6px double var(--danger); }
+#money.gain { border: 6px double var(--money); }
 #money.below-card { top: 61%; transform: none; } /* under the raised card */
 #money .flow { display: contents; } /* its cells join the box's grid, so every row shares the name columns, each as wide as its longest name */
 #money .party { display: flex; align-items: center; gap: .35em; min-width: 0; }

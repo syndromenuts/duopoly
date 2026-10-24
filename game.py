@@ -152,21 +152,21 @@ class Game:
 
     # ----------------------------------------------------------------- money
 
-    def flow(self, src, dst, amount, go=False, buy=False, fine=False):
+    def flow(self, src, dst, amount, go=False, buy=False, fine=False, rent=False):
         """Record amount moving from src to dst: a player id, None for the bank, or "pot" for Free Parking."""
         if amount <= 0:
             return
         self.flow_id += 1
-        self.flows.append({"id": self.flow_id, "from": src, "to": dst, "amount": amount, "card": self.card_ctx, "go": go, "buy": buy, "fine": fine})
+        self.flows.append({"id": self.flow_id, "from": src, "to": dst, "amount": amount, "card": self.card_ctx, "go": go, "buy": buy, "fine": fine, "rent": rent})
         del self.flows[:-30]
 
-    def charge(self, pid, amount, creditor=None, pot=False, reason="", fine=False):
+    def charge(self, pid, amount, creditor=None, pot=False, reason="", fine=False, rent=False):
         """Make pid pay amount to creditor (player id) or the bank. Becomes a debt if unaffordable."""
         if amount <= 0:
             return
         p = self.players[pid]
         to_pot = pot and creditor is None and self.rules["free_parking"]
-        debt = {"debtor": pid, "creditor": creditor, "amount": amount, "pot": to_pot, "reason": reason, "fine": fine}
+        debt = {"debtor": pid, "creditor": creditor, "amount": amount, "pot": to_pot, "reason": reason, "fine": fine, "rent": rent}
         if p.cash >= amount and not any(d["debtor"] == pid for d in self.debts):
             self.pay(debt)
         else:
@@ -176,7 +176,7 @@ class Game:
     def pay(self, debt):
         p = self.players[debt["debtor"]]
         p.cash -= debt["amount"]
-        self.flow(p.id, debt["creditor"] or ("pot" if debt["pot"] else None), debt["amount"], fine=debt.get("fine", False))
+        self.flow(p.id, debt["creditor"] or ("pot" if debt["pot"] else None), debt["amount"], fine=debt.get("fine", False), rent=debt.get("rent", False))
         if debt["creditor"]:
             self.players[debt["creditor"]].cash += debt["amount"]
         elif debt["pot"]:
@@ -246,7 +246,7 @@ class Game:
                 elif self.rules["jail_no_rent"] and self.players[owner].in_jail:
                     self.say(f"{self.players[owner].name} is in Jail, no rent due.")
                 else:
-                    self.charge(p.id, self.rent(pos, dice_total, mode), owner, reason=f"rent for {sp['name']}")
+                    self.charge(p.id, self.rent(pos, dice_total, mode), owner, reason=f"rent for {sp['name']}", rent=True)
         elif t == "tax":
             self.charge(p.id, sp["amount"], None, pot=True, reason=sp["name"], fine=True)
         elif t in ("chance", "chest"):

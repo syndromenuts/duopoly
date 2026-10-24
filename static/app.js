@@ -1034,7 +1034,9 @@ function showMoney(flows, belowCard = false) {
   box.getAnimations({ subtree: true }).forEach((a) => a.cancel());
   box.innerHTML = rows.join("");
   box.classList.toggle("below-card", belowCard);
-  box.classList.toggle("fine", flows.some((f) => f.fine)); // a red rule when a tax square or card takes the money
+  // A red rule when a tax square or card takes the money, or when you pay rent; a green one when rent comes to you.
+  box.classList.toggle("fine", flows.some((f) => f.fine || (f.rent && f.from === myId)));
+  box.classList.toggle("gain", flows.some((f) => f.rent && f.to === myId));
   box.hidden = false;
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
