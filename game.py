@@ -151,12 +151,12 @@ class Game:
 
     # ----------------------------------------------------------------- money
 
-    def flow(self, src, dst, amount, go=False):
+    def flow(self, src, dst, amount, go=False, buy=False):
         """Record amount moving from src to dst: a player id, None for the bank, or "pot" for Free Parking."""
         if amount <= 0:
             return
         self.flow_id += 1
-        self.flows.append({"id": self.flow_id, "from": src, "to": dst, "amount": amount, "card": self.card_ctx, "go": go})
+        self.flows.append({"id": self.flow_id, "from": src, "to": dst, "amount": amount, "card": self.card_ctx, "go": go, "buy": buy})
         del self.flows[:-30]
 
     def charge(self, pid, amount, creditor=None, pot=False, reason=""):
@@ -405,7 +405,7 @@ class Game:
         if p.cash < sp["price"]:
             raise GameError("Not enough cash. Mortgage or sell to raise funds, or decline.")
         p.cash -= sp["price"]
-        self.flow(p.id, None, sp["price"])
+        self.flow(p.id, None, sp["price"], buy=True)
         self.owners[p.pos] = p.id
         self.say(f"{p.name} bought {sp['name']} for ${sp['price']}.")
         self.finish_landing()
@@ -474,7 +474,7 @@ class Game:
         if a["bidder"]:
             w = self.players[a["bidder"]]
             w.cash -= a["high"]
-            self.flow(w.id, None, a["high"])
+            self.flow(w.id, None, a["high"], buy=a["kind"] == "property")
             if a["kind"] == "property":
                 self.owners[a["pos"]] = w.id
             else:

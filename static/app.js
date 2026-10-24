@@ -1000,8 +1000,9 @@ function showMoney(flows, belowCard = false) {
 // Shows the payments in the state on screen that have not been shown yet.
 function showFlows() {
   const fresh = S.flows.filter((f) => !flowsShown.has(f.id));
-  fresh.forEach((f) => f.go && flowsShown.add(f.id)); // GO salary shows on the side only
-  if (S.phase !== "lobby") showMoney(fresh.filter((f) => !f.go));
+  const side = (f) => f.go || f.buy; // GO salary and property purchases show on the side only
+  fresh.forEach((f) => side(f) && flowsShown.add(f.id));
+  if (S.phase !== "lobby") showMoney(fresh.filter((f) => !side(f)));
 }
 
 // ------------------------------------------------------------------ money
