@@ -12,7 +12,7 @@ import time
 from board import DECKS, GROUPS, JAIL, JAILFREE_INDEX, SPACES
 
 TOKEN_COLORS = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#42d4f4", "#f032e6", "#9a6324"]
-DEFAULT_RULES = {"free_parking": False, "double_go": False, "start_cash": 1500}
+DEFAULT_RULES = {"free_parking": False, "double_go": False, "jail_no_rent": False, "start_cash": 1500}
 MAX_PLAYERS = 8
 KICK_AFTER = {"lobby": 15, "playing": 120}
 
@@ -242,6 +242,8 @@ class Game:
             if owner != p.id:
                 if pos in self.mortgaged:
                     self.say(f"{sp['name']} is mortgaged, no rent due.")
+                elif self.rules["jail_no_rent"] and self.players[owner].in_jail:
+                    self.say(f"{self.players[owner].name} is in Jail, no rent due.")
                 else:
                     self.charge(p.id, self.rent(pos, dice_total, mode), owner, reason=f"rent for {sp['name']}")
         elif t == "tax":

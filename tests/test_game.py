@@ -397,6 +397,15 @@ class Jail(unittest.TestCase):
         roll(g, b, 1, 2)
         self.assertEqual(b.cash, 1496)
 
+    def test_no_rent_in_jail_house_rule(self):
+        g, (a, b, c) = new_game(jail_no_rent=True)
+        give(g, a, 3)
+        g.send_to_jail(a)
+        g.turn = 1
+        roll(g, b, 1, 2)
+        self.assertEqual(b.cash, 1500)
+        self.assertIn("P0 is in Jail, no rent due.", g.log)
+
 
 class Cards(unittest.TestCase):
     def draw(self, g, p, kind, idx):
