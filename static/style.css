@@ -170,13 +170,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #flyer { inset: auto; left: 0; top: 0; z-index: 8; pointer-events: none; transform-origin: 0 0; width: calc(var(--B) * .25); height: calc(var(--B) * .15); }
 
 #me .cash { font-size: 22px; font-weight: 700; }
-#me .owned { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin: 6px 0 2px; font-size: 12px; }
-#me .owned li { display: flex; align-items: center; gap: 4px; min-width: 0; padding: 2px 4px; border-radius: var(--radius); cursor: pointer; }
-#me .owned li:hover { background: var(--raised); }
-#me .owned li.m { opacity: .45; text-decoration: line-through; } /* mortgaged */
-#me .owned .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#me .owned .bld { color: #4fc46a; font-weight: 700; letter-spacing: -1px; }
-#me .owned .bld.hotel { color: #ff6b6b; }
+#me .trade-props { margin: 8px 0 2px; }
 #me .notice, .player-card .notice { background: #3a2c16; border-left: 4px solid var(--warn); padding: 6px 8px; margin: 8px 0; }
 #me .notice.bad, .player-card .notice.bad { background: #3d1c1e; border-left-color: var(--danger); }
 #log { max-height: 220px; overflow-y: auto; font-size: 12px; }

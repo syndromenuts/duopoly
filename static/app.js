@@ -491,7 +491,7 @@ function renderMe() {
   }
   let html = `<div><span class="dot" style="background:${m.color}"></span> <b>${esc(m.name)}</b>${m.in_jail ? " · in Jail" : ""}${m.cards ? ` · ${m.cards} Get Out of Jail Free` : ""}</div>`;
   html += `<div class="cash">$${m.cash}</div>`;
-  html += ownedList(m.id);
+  html += ownedTiles(m.id);
   if (m.bankrupt) {
     html += `<div class="notice bad">You are bankrupt.</div>`;
   } else if (S.phase === "playing") {
@@ -529,16 +529,16 @@ function renderMe() {
   box.innerHTML = html;
 }
 
-// Your properties in board order (so color groups sit together); clicking one opens its dialog.
-function ownedList(id) {
+// A player's properties as deed tiles in board order (so color groups sit together); clicking one opens its dialog.
+function ownedTiles(id) {
   const props = ownedBy(id);
   if (!props.length) return "";
-  return `<ul class="owned plain">` + props.map((pos) => {
-    const h = housesOn(pos);
+  return `<div class="trade-props">` + props.map((pos) => {
+    const sp = space(pos), kind = squareKind(sp), h = housesOn(pos);
     const bld = h === 5 ? `<span class="bld hotel">H</span>` : h ? `<span class="bld">${"▪".repeat(h)}</span>` : "";
-    return `<li class="${isMortgaged(pos) ? "m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
-      <span class="chip" style="background:${groupColor(pos)}"></span><span class="nm">${esc(space(pos).name)}</span>${bld}</li>`;
-  }).join("") + `</ul>`;
+    return `<button type="button" class="tprop${isMortgaged(pos) ? " m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
+      <span class="strip ${kind}"${kind ? "" : ` style="background:${groupColor(pos)}"`}></span><span class="nm">${esc(sp.name)}</span>${bld}</button>`;
+  }).join("") + `</div>`;
 }
 
 // Rent by house level for a street, or by stations owned for a station; row `cur` is highlighted.
@@ -681,12 +681,7 @@ function renderPlayerDetail() {
       ${stat("Houses / hotels", `${houses} / ${hotels}`)}${stat("Mortgaged", props.filter(isMortgaged).length)}${stat("Jail cards", p.cards)}</div>
     <div class="hint">Total worth is cash plus what selling every building and mortgaging every property would raise.</div>`;
   for (const d of S.debts.filter((d) => d.debtor === p.id)) html += `<div class="notice bad">Owes <b>$${d.amount}</b> to ${pname(d.creditor)} (${esc(d.reason)}).</div>`;
-  html += props.length ? `<div class="trade-props">` + props.map((pos) => {
-    const sp = space(pos), kind = squareKind(sp), h = housesOn(pos);
-    const bld = h === 5 ? `<span class="bld hotel">H</span>` : h ? `<span class="bld">${"▪".repeat(h)}</span>` : "";
-    return `<button type="button" class="tprop${isMortgaged(pos) ? " m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
-      <span class="strip ${kind}"${kind ? "" : ` style="background:${groupColor(pos)}"`}></span><span class="nm">${esc(sp.name)}</span>${bld}</button>`;
-  }).join("") + `</div>` : `<div class="hint">No properties.</div>`;
+  html += props.length ? ownedTiles(p.id) : `<div class="hint">No properties.</div>`;
   let acts = "";
   if (S.phase === "playing" && me() && !me().bankrupt && p.id !== myId && !p.bankrupt && S.order.includes(p.id))
     acts += btn("Propose trade", "trade_with", { id: p.id }, "", !!S.auction);
