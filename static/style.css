@@ -154,7 +154,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #dice-box { position: relative; }
 #center .dice.spent .die { filter: grayscale(1) brightness(.7); opacity: .45; }
 #center .end-turn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-#center .end-turn button { margin: 0; padding: 8px 18px; font-size: clamp(13px, 1.7vw, 16px); animation: end-turn-pulse 1.4s ease-in-out infinite; }
+#center .end-turn button { margin: 0; padding: 8px 18px; white-space: nowrap; font-size: clamp(13px, 1.7vw, 16px); animation: end-turn-pulse 1.4s ease-in-out infinite; }
 @keyframes end-turn-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { #center .end-turn button { animation: none; } }
 #center .deck { position: relative; flex: none; width: calc(var(--B) * .25); height: calc(var(--B) * .15); margin: calc(var(--B) * .01) 0; }
