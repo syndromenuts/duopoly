@@ -165,7 +165,6 @@ function bindStatic() {
     if (li && e.target === li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); li.click(); }
   };
   $("trade-modal").onclick = (e) => { if (e.target.id === "trade-modal") closeTrade(); };
-  document.querySelectorAll(".trade-close").forEach((b) => (b.onclick = closeTrade));
   $("trade-send").onclick = async () => {
     if (await send("propose_trade", tradeDraft)) closeTrade();
   };
@@ -671,8 +670,7 @@ function renderPlayerDetail() {
   let acts = "";
   if (S.phase === "playing" && me() && !me().bankrupt && p.id !== myId && !p.bankrupt && S.order.includes(p.id))
     acts += btn("Propose trade", "trade_with", { id: p.id }, "", !!S.auction || !!S.trades.length);
-  acts += `<button class="secondary" onclick="closePlayer()">Close</button>`;
-  html += `<div class="acts">${acts}</div>`;
+  if (acts) html += `<div class="acts">${acts}</div>`;
   const body = $("player-body");
   if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
 }
@@ -693,7 +691,7 @@ function renderProp() {
   let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed${pos === openProp ? " on" : ""}">${deedHtml(pos, true)}</div>`).join("")}</div>` : deedHtml(openProp);
   if (mine && sp.price) html += `<div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;
   const sellAll = mine && set.length > 1 && groupHasBuildings(openProp) ? btn("Sell all in group", "sell_all", { pos: openProp }, "secondary") : "";
-  html += `<div class="acts">${sellAll}<button class="secondary" onclick="openProp=null;renderProp()">Close</button></div>`;
+  if (sellAll) html += `<div class="acts">${sellAll}</div>`;
   $("prop-body").classList.toggle("set", set.length > 1);
   $("prop-body").innerHTML = html;
 }
