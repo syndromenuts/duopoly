@@ -620,6 +620,7 @@ function renderOffer() {
   const modal = $("offer-modal");
   modal.hidden = !t;
   if (!t) return;
+  if (t.to === myId && tradeDraft) closeTrade(); // a draft of your own would cover the offer, and can't be sent while it's open anyway
   let title, view, acts = "";
   if (t.to === myId) { // the proposer's form seen from this side: what you'd give on the left, what you'd get on the right
     title = "Trade offer";
