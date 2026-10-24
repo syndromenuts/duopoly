@@ -501,8 +501,8 @@ function renderMe() {
     $("game-acts").innerHTML = $("trade-act").innerHTML = "";
     return;
   }
-  let html = `<div><span class="dot" style="background:${m.color}"></span> <b>${esc(m.name)}</b>${m.in_jail ? " · in Jail" : ""}${m.cards ? ` · ${m.cards} Get Out of Jail Free` : ""}</div>`;
-  html += `<div class="cash">${cashHtml(m)}</div>`;
+  let html = `<div class="me-head"><div><span class="dot" style="background:${m.color}"></span> <b>${esc(m.name)}</b>${m.in_jail ? " · in Jail" : ""}${m.cards ? ` · ${m.cards} Get Out of Jail Free` : ""}</div>`;
+  html += `<div class="cash">${cashHtml(m)}</div></div>`;
   html += ownedTiles(m.id);
   if (m.bankrupt) {
     html += `<div class="notice bad">You are bankrupt.</div>`;
