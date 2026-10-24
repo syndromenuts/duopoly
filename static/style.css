@@ -180,6 +180,10 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .deed .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .deed .acts button { margin: 0; padding: 8px 18px; }
 .deed .acts button.go { background: var(--build); }
+.deed .acts .line { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; } /* one row of buttons */
+.steady { display: inline-grid; justify-items: center; } /* both words share one cell, sized to the wider */
+.steady > span { grid-area: 1 / 1; }
+.steady > span + span { visibility: hidden; }
 #flyer { inset: auto; left: 0; top: 0; z-index: 8; pointer-events: none; transform-origin: 0 0; width: calc(var(--B) * .25); height: calc(var(--B) * .15); }
 
 #me .cash { font-size: 22px; font-weight: 700; }

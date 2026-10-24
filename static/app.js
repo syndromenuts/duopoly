@@ -689,17 +689,14 @@ function renderProp() {
   const sp = space(openProp), owner = ownerOf(openProp);
   const set = sp.type === "property" && owner && BOARD.groups[sp.group].every((q) => ownerOf(q) === owner) ? BOARD.groups[sp.group] : [openProp];
   const m = me(), mine = owner === myId && S.phase === "playing" && !m.bankrupt;
-  let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed${pos === openProp ? " on" : ""}">${deedHtml(pos, true)}</div>`).join("")}</div>` : deedHtml(openProp);
+  let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed${pos === openProp ? " on" : ""}">${deedHtml(pos)}</div>`).join("")}</div>` : deedHtml(openProp);
   if (mine && sp.price) html += `<div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;
-  const sellAll = mine && set.length > 1 && groupHasBuildings(openProp) ? btn("Sell all in group", "sell_all", { pos: openProp }, "secondary") : "";
-  if (sellAll) html += `<div class="acts">${sellAll}</div>`;
   $("prop-body").classList.toggle("set", set.length > 1);
   $("prop-body").innerHTML = html;
 }
 
-// One space's title deed: its head, price, rent and, for its owner, the build and mortgage buttons
-// (Sell all in group too, unless it shows in a set, where that button sits once under the deeds).
-function deedHtml(pos, inSet = false) {
+// One space's title deed: its head, price, rent and, for its owner, the build, sell and mortgage buttons.
+function deedHtml(pos) {
   const sp = space(pos), owner = ownerOf(pos), h = housesOn(pos);
   let html = propHead(sp);
   if (sp.price) html += owner ? `<div class="hint">Mortgage value</div><div class="price mortgage">$${sp.price / 2}</div>` : `<div class="price">$${sp.price}</div>`;
@@ -711,7 +708,8 @@ function deedHtml(pos, inSet = false) {
     html += `<div class="hint">${{ go: "Collect $200 salary as you pass.", jail: "Just visiting, or in Jail.", parking: S.rules.free_parking ? `Collect the pot ($${S.pot}).` : "Nothing happens here.",
       gotojail: "Go directly to Jail.", chance: "Draw a Chance card.", chest: "Draw a Community Chest card.", tax: `Pay $${sp.amount}.` }[sp.type] || ""}</div>`;
   }
-  let acts = "";
+  // Button rows: build alone, then mortgage beside selling.
+  let acts = "", build = "", sell = "";
   if (sp.price) {
     const mv = sp.price / 2, fee = Math.ceil(mv / 10);
     // Buildings need no line of their own: the rent table already highlights the current level.
@@ -721,17 +719,22 @@ function deedHtml(pos, inSet = false) {
     const m = me();
     if (owner === myId && S.phase === "playing" && !m.bankrupt) {
       if (sp.type === "property") {
-        if (h < 5) acts += btn(m.pending_build ? `Place auctioned ${m.pending_build}` : `Build ${h === 4 ? "hotel" : "house"} ($${sp.house_cost})`, "build", { pos }, "go");
-        if (h) acts += btn(`Sell ${h === 5 ? "hotel" : "house"} (+$${sp.house_cost / 2})`, "sell_building", { pos }, "secondary");
-        if (!inSet && groupHasBuildings(pos)) acts += btn("Sell all in group", "sell_all", { pos }, "secondary");
+        const kind = (b) => steady(b, b === "hotel" ? "house" : "hotel");
+        if (h < 5) build += btn(m.pending_build ? `Place auctioned ${m.pending_build}` : `Build ${kind(h === 4 ? "hotel" : "house")} ($${sp.house_cost})`, "build", { pos }, "go");
+        if (h) sell += btn(`Sell ${kind(h === 5 ? "hotel" : "house")} (+$${sp.house_cost / 2})`, "sell_building", { pos }, "secondary");
       }
       if (isMortgaged(pos)) {
-        if (!m.pending_mortgages.includes(pos)) acts += btn(`Pay off mortgage ($${mv + fee})`, "unmortgage", { pos });
-      } else acts += btn("Mortgage", "mortgage", { pos }, "plain");
+        if (!m.pending_mortgages.includes(pos)) sell = btn(`Pay off mortgage ($${mv + fee})`, "unmortgage", { pos }) + sell;
+      } else sell = btn("Mortgage", "mortgage", { pos }, "plain") + sell;
+      acts = [build, sell].filter(Boolean).map((row) => `<div class="line">${row}</div>`).join("");
     }
   }
   return acts ? html + `<div class="acts">${acts}</div>` : html;
 }
+
+// Shows one word while keeping room for another, so a button doesn't change width (and reflow
+// its row) when its label flips, e.g. from house to hotel.
+const steady = (shown, other) => `<span class="steady"><span>${shown}</span><span aria-hidden="true">${other}</span></span>`;
 
 // ------------------------------------------------------------------ trading
 
