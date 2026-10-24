@@ -300,9 +300,10 @@ function renderBoard() {
   center += `<div class="hint">Bank: ${S.bank_houses} houses, ${S.bank_hotels} hotels${S.rules.free_parking ? ` · Free Parking pot $${S.pot}` : ""}</div>`;
   center += `<div class="hint">Click any space for details. Click your own properties to build or mortgage.</div>`;
   const m = me();
-  if (m && !m.bankrupt && S.phase === "playing" && myTurn() && !animating && S.stage === "done" && !(S.blocked && waitingReason()))
-    center += `<div class="end-turn">${btn("End turn", "end_turn", null, "danger")}</div>`;
-  if (center !== shownCenter) $("center-info").innerHTML = shownCenter = center; // rewriting it would restart the End turn pulse
+  const canEnd = !!m && !m.bankrupt && S.phase === "playing" && myTurn() && !animating && S.stage === "done" && !(S.blocked && waitingReason());
+  $("end-turn").hidden = !canEnd; // sits over the dice, which grey out since there is nothing left to roll
+  $("dice").classList.toggle("spent", canEnd);
+  if (center !== shownCenter) $("center-info").innerHTML = shownCenter = center;
   renderDecks();
 }
 

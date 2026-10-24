@@ -151,8 +151,9 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 }
 #dev-dice { display: flex; gap: 6px; margin: -6px 0 10px; }
 #dev-dice[hidden] { display: none; }
-#center-info { position: relative; }
-#center .end-turn { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: calc(var(--B) * .05); } /* takes no room, so the rest of the center stays put */
+#dice-box { position: relative; }
+#center .dice.spent .die { filter: grayscale(1) brightness(.7); opacity: .45; }
+#center .end-turn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 #center .end-turn button { margin: 0; padding: 8px 18px; font-size: clamp(13px, 1.7vw, 16px); animation: end-turn-pulse 1.4s ease-in-out infinite; }
 @keyframes end-turn-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { #center .end-turn button { animation: none; } }
