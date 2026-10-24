@@ -826,7 +826,7 @@ function renderProp() {
   const sp = space(openProp), owner = ownerOf(openProp);
   const set = sp.price && owner && BOARD.groups[sp.group].every((q) => ownerOf(q) === owner) ? BOARD.groups[sp.group] : [openProp];
   const m = me(), mine = owner === myId && S.phase === "playing" && !m.bankrupt;
-  let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed${pos === openProp ? " on" : ""}">${deedHtml(pos)}</div>`).join("")}</div>` : deedHtml(openProp);
+  let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed">${deedHtml(pos)}</div>`).join("")}</div>` : deedHtml(openProp);
   if (mine && sp.price) html += `<div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;
   $("prop-body").classList.toggle("set", set.length > 1);
   $("prop-body").innerHTML = html;
