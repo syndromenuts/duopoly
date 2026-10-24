@@ -591,17 +591,30 @@ function renderMe() {
 }
 
 // A player's properties as deed tiles in board order (so color groups sit together); clicking one opens its dialog.
+// A color set, or all the stations or utilities, owned whole collapses into one stacked tile, which opens the set's deeds side by side.
 function ownedTiles(id) {
   const props = ownedBy(id);
   if (!props.length) return "";
-  return `<div class="trade-props">` + props.map((pos) => {
-    const sp = space(pos), kind = squareKind(sp), h = housesOn(pos);
+  const tiles = [];
+  for (const pos of props) {
+    const sp = space(pos), kind = squareKind(sp);
+    const group = BOARD.groups[sp.group];
+    if (group && group.length > 1 && group.every((q) => ownerOf(q) === id)) {
+      if (pos !== group[0]) continue; // drawn once, at the set's first street
+      const mort = group.filter(isMortgaged).map((q) => space(q).name);
+      tiles.push(`<button type="button" class="tprop stack s${group.length}${kind ? " " + kind : ""}${mort.length ? " m" : ""}" onclick="openProp=${pos};renderProp()"
+        title="${group.map((q) => esc(space(q).name)).join(", ")}${mort.length ? ` (mortgaged: ${mort.map(esc).join(", ")})` : ""}">
+        ${kind ? "" : `<span class="strip" style="background:${groupColor(pos)}"></span>`}
+        <span class="nm">${esc(sp.name)}</span><span class="cnt">×${group.length}</span></button>`);
+      continue;
+    }
     // Buildings sit in the colour strip, drawn as on the board.
-    const bld = h ? `<span class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "" : "■".repeat(h)}</span>` : "";
+    const h = housesOn(pos), bld = h ? `<span class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "" : "■".repeat(h)}</span>` : "";
     // Stations and utilities are tinted all over instead of carrying a strip.
-    return `<button type="button" class="tprop${kind ? " " + kind : ""}${isMortgaged(pos) ? " m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
-      ${kind ? "" : `<span class="strip" style="background:${groupColor(pos)}">${bld}</span>`}<span class="nm">${esc(sp.name)}</span></button>`;
-  }).join("") + `</div>`;
+    tiles.push(`<button type="button" class="tprop${kind ? " " + kind : ""}${isMortgaged(pos) ? " m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
+      ${kind ? "" : `<span class="strip" style="background:${groupColor(pos)}">${bld}</span>`}<span class="nm">${esc(sp.name)}</span></button>`);
+  }
+  return `<div class="trade-props">${tiles.join("")}</div>`;
 }
 
 // Rent by house level for a street, or by stations owned for a station; row `cur` is highlighted.
@@ -738,9 +751,9 @@ function renderProp() {
   const modal = $("prop-modal");
   if (openProp == null || !S || S.phase === "lobby") { modal.hidden = true; return; }
   modal.hidden = false;
-  // A street in a color set one player owns whole opens the set's deeds side by side.
+  // A street, station or utility in a set one player owns whole opens the set's deeds side by side.
   const sp = space(openProp), owner = ownerOf(openProp);
-  const set = sp.type === "property" && owner && BOARD.groups[sp.group].every((q) => ownerOf(q) === owner) ? BOARD.groups[sp.group] : [openProp];
+  const set = sp.price && owner && BOARD.groups[sp.group].every((q) => ownerOf(q) === owner) ? BOARD.groups[sp.group] : [openProp];
   const m = me(), mine = owner === myId && S.phase === "playing" && !m.bankrupt;
   let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed${pos === openProp ? " on" : ""}">${deedHtml(pos)}</div>`).join("")}</div>` : deedHtml(openProp);
   if (mine && sp.price) html += `<div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;

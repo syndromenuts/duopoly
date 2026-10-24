@@ -278,6 +278,20 @@ button.tprop:hover:not(:disabled) { border-color: var(--accent); }
 .tprop.on, button.tprop.on:hover { border-color: var(--warn); box-shadow: 0 0 0 2px var(--warn); }
 .tprop.on::after { content: "✓"; position: absolute; top: 0; right: 3px; color: #fff; font-weight: 700; text-shadow: 0 0 3px #000; }
 .trade-view.ro .tprop:not(.on) { opacity: .35; }
+/* a whole set owned (colors, stations or utilities): one deed with the rest of the set peeking out behind it */
+.tprop.stack { overflow: visible; margin: 0 6px 6px 0; border-color: #1a1a1a66; }
+/* --face is the tint of the cards behind; behind Power Company sits Water Works */
+.tprop.stack { --face: var(--cell); }
+.tprop.stack.station { --face: #b8d8d6; }
+.tprop.stack.power { --face: #d4e9f7; }
+.tprop.stack.s2 { margin: 0 3px 3px 0; box-shadow: 3px 3px 0 -1px var(--face), 3px 3px 0 0 #1a1a1a99; }
+.tprop.stack.s3 { box-shadow: 3px 3px 0 -1px var(--face), 3px 3px 0 0 #1a1a1a99, 6px 6px 0 -1px var(--face), 6px 6px 0 0 #1a1a1a99; }
+.tprop.stack.s4 { box-shadow: 2px 2px 0 -1px var(--face), 2px 2px 0 0 #1a1a1a99, 4px 4px 0 -1px var(--face), 4px 4px 0 0 #1a1a1a99,
+  6px 6px 0 -1px var(--face), 6px 6px 0 0 #1a1a1a99; } /* four deeds in the same room as three */
+.tprop.stack .strip { border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0; }
+.tprop.stack .nm { border-radius: 0 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px); }
+.tprop.stack:not(:has(.strip)) .nm { border-radius: calc(var(--radius) - 2px); }
+.tprop .cnt { position: absolute; right: 3px; bottom: 2px; font-size: .9em; font-weight: 700; opacity: .6; }
 .trade-cash { margin-top: auto; padding-top: 10px; } /* pinned to the bottom, level across both sides */
 .trade-cash input.money, .trade-cash input.money:disabled { color: var(--money); -webkit-text-fill-color: var(--money); }
 .trade-cash input[type=range] { display: block; width: 100%; margin: 4px 0 0; accent-color: var(--money); }
