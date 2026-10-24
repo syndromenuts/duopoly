@@ -129,7 +129,9 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 }
 #center-info { position: relative; }
 #center .end-turn { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: calc(var(--B) * .05); } /* takes no room, so the rest of the center stays put */
-#center .end-turn button { margin: 0; padding: 8px 18px; font-size: clamp(13px, 1.7vw, 16px); }
+#center .end-turn button { margin: 0; padding: 8px 18px; font-size: clamp(13px, 1.7vw, 16px); animation: end-turn-pulse 1.4s ease-in-out infinite; }
+@keyframes end-turn-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { #center .end-turn button { animation: none; } }
 #center .deck { position: relative; flex: none; width: calc(var(--B) * .25); height: calc(var(--B) * .15); margin: calc(var(--B) * .01) 0; }
 #center .deck.chance { margin-bottom: auto; }
 #center .deck.chest { margin-top: auto; }

@@ -18,6 +18,7 @@ let seenRoll = null; // roll_id already shown, so only fresh rolls animate
 let rollingUntil = 0;
 let moving = null; // id of the player whose token is animating along the board
 let animating = false; // a roll is still playing out (token or card), so the rest of the state waits
+let shownCenter = null; // markup last put in the center info
 let revealed = null; // ids of drawn cards that have reached their deck (null until the first state)
 
 // ------------------------------------------------------------------ server
@@ -286,7 +287,7 @@ function renderBoard() {
   const m = me();
   if (m && !m.bankrupt && S.phase === "playing" && myTurn() && !animating && S.stage === "done" && !(S.blocked && waitingReason()))
     center += `<div class="end-turn">${btn("End turn", "end_turn", null, "danger")}</div>`;
-  $("center-info").innerHTML = center;
+  if (center !== shownCenter) $("center-info").innerHTML = shownCenter = center; // rewriting it would restart the End turn pulse
   renderDecks();
 }
 
