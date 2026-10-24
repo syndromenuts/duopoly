@@ -477,6 +477,7 @@ function renderMe() {
   }
   let html = `<div><span class="dot" style="background:${m.color}"></span> <b>${esc(m.name)}</b>${m.in_jail ? " · in Jail" : ""}${m.cards ? ` · ${m.cards} Get Out of Jail Free` : ""}</div>`;
   html += `<div class="cash">$${m.cash}</div>`;
+  html += ownedList(m.id);
   if (m.bankrupt) {
     html += `<div class="notice bad">You are bankrupt.</div>`;
   } else if (S.phase === "playing") {
@@ -512,6 +513,18 @@ function renderMe() {
     if (votes) html += `<div class="hint">${votes} vote(s) to end the game. Every connected player must vote.</div>`;
   }
   box.innerHTML = html;
+}
+
+// Your properties in board order (so color groups sit together); clicking one opens its dialog.
+function ownedList(id) {
+  const props = ownedBy(id);
+  if (!props.length) return "";
+  return `<ul class="owned plain">` + props.map((pos) => {
+    const h = housesOn(pos);
+    const bld = h === 5 ? `<span class="bld hotel">H</span>` : h ? `<span class="bld">${"▪".repeat(h)}</span>` : "";
+    return `<li class="${isMortgaged(pos) ? "m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
+      <span class="chip" style="background:${groupColor(pos)}"></span><span class="nm">${esc(space(pos).name)}</span>${bld}</li>`;
+  }).join("") + `</ul>`;
 }
 
 // The offer to buy the space you landed on, laid over the middle of the board once the roll has played out.
