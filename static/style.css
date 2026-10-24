@@ -276,6 +276,9 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .player-card .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .player-card .acts button { margin: 0; }
 @media (max-width: 400px) { .pstats { grid-template-columns: repeat(2, 1fr); } }
+.modal > .card.debt-card { border-color: var(--danger); }
+.debt-card .short { color: var(--danger); }
+.debt-cash { font-size: 40px; font-weight: 700; text-align: center; line-height: 1.2; margin: 6px 0; }
 .offer .acts, .trade-card .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .offer .acts button, .trade-card .acts button { margin: 0; }
 .prop-head { padding: 10px; border-radius: var(--radius); color: #fff; font-weight: 700; margin-bottom: 8px; text-shadow: 0 0 3px #000; }

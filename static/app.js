@@ -17,6 +17,7 @@ let seenTrade = null; // id of the open trade already put on screen
 let seenAuction = null; // number of the latest finished auction already shown
 let auctionResultUntil = 0; // until when the popup stays up showing who won
 let openPlayer = null; // id of the player shown in the player popup
+let debtHidden = null; // the debt whose raise-funds popup was waved away, so it stays shut until another comes due
 let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
 let rollingUntil = 0;
@@ -171,6 +172,7 @@ function bindStatic() {
 
   $("prop-modal").onclick = (e) => { if (e.target.id === "prop-modal") { openProp = null; renderProp(); } };
   $("player-modal").onclick = (e) => { if (e.target.id === "player-modal") closePlayer(); };
+  $("debt-modal").onclick = (e) => { if (e.target.id === "debt-modal") hideDebt(); };
   $("turns").onkeydown = (e) => {
     const li = e.target.closest("li[data-act]");
     if (li && e.target === li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); li.click(); }
@@ -201,6 +203,8 @@ function bindStatic() {
     const data = b.dataset.arg ? JSON.parse(b.dataset.arg) : {};
     if (b.dataset.act === "counter") return counterTrade(data.id);
     if (b.dataset.act === "view_player") { openPlayer = data.id; return renderPlayerDetail(); }
+    if (b.dataset.act === "hide_debt") return hideDebt();
+    if (b.dataset.act === "open_debt") { debtHidden = null; return renderDebt(); }
     if (b.dataset.act === "trade_with") { closePlayer(); return openTrade(emptyDraft(data.id)); }
     if (b.id === "dice") { // one roll per click; a refused roll makes the dice clickable again
       setRollable(false);
@@ -221,7 +225,7 @@ function render() {
   const inGame = S.phase !== "lobby";
   $("lobby").hidden = inGame;
   $("game").hidden = !inGame;
-  if (!inGame) { $("offer-modal").hidden = $("player-modal").hidden = true; return renderLobby(); }
+  if (!inGame) { $("offer-modal").hidden = $("player-modal").hidden = $("debt-modal").hidden = true; return renderLobby(); }
   renderBoard();
   renderMe();
   renderBuyOffer();
@@ -229,6 +233,7 @@ function render() {
   renderOffer();
   renderPlayers();
   renderPlayerDetail();
+  renderDebt();
   $("log").innerHTML = S.log.slice().reverse().map((l) => `<li>${esc(l)}</li>`).join("");
   renderProp();
 }
@@ -562,7 +567,7 @@ function renderMe() {
     if (myDebts.length) {
       const d = myDebts[0];
       html += `<div class="notice bad">You owe <b>$${d.amount}</b> to ${pname(d.creditor)} (${esc(d.reason)}). Raise money by selling buildings,
-        mortgaging or trading. It is paid automatically once you have enough cash.<br>${btn("Declare bankruptcy", "bankrupt", null, "danger")}</div>`;
+        mortgaging or trading. It is paid automatically once you have enough cash.<br>${btn("Raise funds", "open_debt")}${btn("Declare bankruptcy", "bankrupt", null, "danger")}</div>`;
     }
     for (const pos of m.pending_mortgages) {
       const mv = space(pos).price / 2, fee = Math.ceil(mv / 10);
@@ -812,6 +817,37 @@ function renderPlayerDetail() {
   if (acts) html += `<div class="acts">${acts}</div>`;
   const body = $("player-body");
   if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
+}
+
+// While you owe more than you have, a popup shows your cash less the debt over your properties as deed tiles;
+// clicking one opens its deed to sell buildings or mortgage. Debts pay themselves once the cash is there.
+function renderDebt() {
+  const m = me(), mine = m && !m.bankrupt && S.phase === "playing" ? S.debts.filter((d) => d.debtor === myId) : [];
+  const modal = $("debt-modal");
+  modal.hidden = !mine.length || debtHidden === JSON.stringify(mine[0]);
+  if (modal.hidden) return;
+  const owed = mine.reduce((sum, x) => sum + x.amount, 0);
+  let raise = 0;
+  for (const pos of ownedBy(myId)) {
+    const sp = space(pos);
+    if (sp.house_cost) raise += housesOn(pos) * sp.house_cost / 2;
+    if (!isMortgaged(pos)) raise += sp.price / 2;
+  }
+  const left = m.cash - owed; // cash after paying what's owed, so negative until enough is raised
+  let html = `<h2>Raise funds</h2>
+    <div class="debt-cash money${left < 0 ? " short" : ""}">${left < 0 ? "-" : ""}$${Math.abs(left)}</div>`;
+  if (m.cash + raise < owed) html += `<div class="hint">Selling and mortgaging everything won't cover it. Only a trade can save you now.</div>`;
+  html += ownedTiles(myId) || `<div class="hint">You have no properties.</div>`;
+  html += `<div class="hint">It is paid automatically once you have enough cash.</div>
+    <div class="acts">${btn("Hide", "hide_debt", null, "secondary")}${btn("Declare bankruptcy", "bankrupt", null, "danger")}</div>`;
+  const body = $("debt-body");
+  if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
+}
+
+function hideDebt() {
+  const d = S.debts.find((x) => x.debtor === myId);
+  debtHidden = d ? JSON.stringify(d) : null;
+  renderDebt();
 }
 
 function closePlayer() {
