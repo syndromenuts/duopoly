@@ -920,8 +920,7 @@ function deedHtml(pos, bare = false, pad = false) {
   if (sp.price) {
     const mv = sp.price / 2, fee = Math.ceil(mv / 10);
     // Buildings need no line of their own: the rent table already highlights the current level.
-    if (!owner) html += `<div class="hint">Owner: none (bank)</div>`;
-    else if (isMortgaged(pos)) html += `<div class="hint"><b>MORTGAGED</b></div>`;
+    if (owner && isMortgaged(pos)) html += `<div class="hint"><b>MORTGAGED</b></div>`;
     html += `<div class="hint">${owner ? `Price $${sp.price}` : `Mortgage value <span class="mortgage">$${mv}</span>`}</div>`;
     const m = me();
     if (!bare && owner === myId && S.phase === "playing" && !m.bankrupt) {
