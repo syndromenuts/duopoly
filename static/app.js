@@ -177,8 +177,8 @@ function bindStatic() {
   };
   $("trade-modal").onclick = (e) => { if (e.target.id === "trade-modal") closeTrade(); };
   document.body.addEventListener("mouseover", (e) => {
-    const tile = e.target.closest(".trade-view .tprop[data-pos]");
-    if (tile !== showTradeDeed.tile) showTradeDeed(showTradeDeed.tile = tile);
+    const tile = e.target.closest(".trade-view .tprop[data-pos], .player-card .tprop[data-pos], #me .tprop[data-pos]");
+    if (tile !== showHoverDeed.tile) showHoverDeed(showHoverDeed.tile = tile);
   });
   $("trade-send").onclick = async () => {
     if (await send("propose_trade", tradeDraft)) closeTrade();
@@ -613,7 +613,7 @@ function ownedTiles(id) {
     if (group && group.length > 1 && group.every((q) => ownerOf(q) === id)) {
       if (pos !== group[0]) continue; // drawn once, at the set's first street
       const mort = group.filter(isMortgaged).map((q) => space(q).name);
-      tiles.push(`<button type="button" class="tprop stack s${group.length}${kind ? " " + kind : ""}${mort.length ? " m" : ""}" onclick="openProp=${pos};renderProp()"
+      tiles.push(`<button type="button" class="tprop stack s${group.length}${kind ? " " + kind : ""}${mort.length ? " m" : ""}" data-pos="${pos}" onclick="openProp=${pos};renderProp()"
         title="${group.map((q) => esc(space(q).name)).join(", ")}${mort.length ? ` (mortgaged: ${mort.map(esc).join(", ")})` : ""}">
         ${kind ? "" : `<span class="strip" style="background:${groupColor(pos)}"></span>`}
         <span class="nm">${esc(sp.name)}</span><span class="cnt">×${group.length}</span></button>`);
@@ -622,7 +622,7 @@ function ownedTiles(id) {
     // Buildings sit in the colour strip, drawn as on the board.
     const h = housesOn(pos), bld = h ? `<span class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "" : "■".repeat(h)}</span>` : "";
     // Stations and utilities are tinted all over instead of carrying a strip.
-    tiles.push(`<button type="button" class="tprop${kind ? " " + kind : ""}${isMortgaged(pos) ? " m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
+    tiles.push(`<button type="button" class="tprop${kind ? " " + kind : ""}${isMortgaged(pos) ? " m" : ""}" data-pos="${pos}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
       ${kind ? "" : `<span class="strip" style="background:${groupColor(pos)}">${bld}</span>`}<span class="nm">${esc(sp.name)}</span></button>`);
   }
   return `<div class="trade-props">${tiles.join("")}</div>`;
@@ -742,7 +742,7 @@ function renderOffer() {
   const t = S.trades[0];
   const modal = $("offer-modal");
   modal.hidden = !t;
-  if (!t) return showTradeDeed(showTradeDeed.tile = null);
+  if (!t) return showHoverDeed(showHoverDeed.tile = null);
   // A new offer closes any draft, which would cover it and can't be sent while it's open anyway.
   // Only a new one, so the counter draft opened over the offer it rejects isn't closed by a stale render.
   if (t.id !== seenTrade && tradeDraft) closeTrade();
@@ -785,7 +785,7 @@ function renderPlayerDetail() {
   const p = openPlayer && player(openPlayer);
   const modal = $("player-modal");
   modal.hidden = !p;
-  if (!p) { openPlayer = null; return; }
+  if (!p) { openPlayer = null; return showHoverDeed(showHoverDeed.tile = null); }
   const props = ownedBy(p.id);
   let houses = 0, hotels = 0, raise = 0;
   for (const pos of props) {
@@ -814,6 +814,7 @@ function renderPlayerDetail() {
 
 function closePlayer() {
   openPlayer = null;
+  showHoverDeed(showHoverDeed.tile = null);
   $("player-modal").hidden = true;
 }
 
@@ -894,7 +895,7 @@ function counterTrade(id) {
 
 function closeTrade() {
   $("trade-modal").hidden = true;
-  showTradeDeed(showTradeDeed.tile = null);
+  showHoverDeed(showHoverDeed.tile = null);
   tradeDraft = null;
 }
 
@@ -929,16 +930,20 @@ function tradeSide(who, key, side, editable) {
 const tradeView = (left, right, editable) =>
   `<div class="trade-view${editable ? "" : " ro"}">${tradeSide(...left, editable)}${TRADE_ARROW}${tradeSide(...right, editable)}</div>`;
 
-// Hovering a property in a trade shows its deed just left of the trade's card; hidden where there's no room for it.
-function showTradeDeed(tile) {
-  const box = $("trade-deed");
+// Hovering a property in a trade, a player's details or your own box shows its deed just left of that card, or a whole set's deeds
+// for a stacked tile (wrapping into rows if they don't fit side by side); hidden where there's no room for even one.
+function showHoverDeed(tile) {
+  const box = $("hover-deed");
   if (!tile) { box.hidden = true; return; }
-  const card = tile.closest(".card").getBoundingClientRect();
-  box.innerHTML = deedHtml(Number(tile.dataset.pos), true);
+  const card = tile.closest(".card").getBoundingClientRect(), gap = 12, room = card.left - gap - 8;
+  if (room < 260) { box.hidden = true; return; }
+  const pos = Number(tile.dataset.pos);
+  const set = tile.classList.contains("stack") ? BOARD.groups[space(pos).group] : [pos];
+  box.innerHTML = set.map((q) => `<div class="card deed">${deedHtml(q, true)}</div>`).join("");
+  box.style.maxWidth = `${room}px`;
+  box.style.left = "0"; // measured from the left edge, so a stale offset doesn't squeeze its width
   box.hidden = false;
-  const w = box.offsetWidth, gap = 12;
-  if (card.left - gap < w) { box.hidden = true; return; }
-  box.style.left = `${card.left - gap - w}px`;
+  box.style.left = `${card.left - gap - box.offsetWidth}px`;
   box.style.top = `${Math.max(8, Math.min(card.top, innerHeight - box.offsetHeight - 8))}px`;
 }
 

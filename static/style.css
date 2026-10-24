@@ -319,10 +319,11 @@ button.tprop:hover:not(:disabled) { border-color: var(--accent); }
 .tprop.stack .nm { border-radius: 0 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px); }
 .tprop.stack:not(:has(.strip)) .nm { border-radius: calc(var(--radius) - 2px); }
 .tprop .cnt { position: absolute; right: 3px; bottom: 2px; font-size: .9em; font-weight: 700; opacity: .6; }
-/* the deed of the property hovered in a trade, floated left of the trade's card */
-#trade-deed { position: fixed; z-index: 11; width: 260px; margin: 0; pointer-events: none; border: 6px double #5c636b; }
-#trade-deed[hidden] { display: none; }
-#trade-deed table.rent td.note { white-space: normal; } /* the long note wraps in this narrower deed */
+/* the deed (or a set's deeds) of the property hovered in a trade, a player's details or your own box, floated left of that card */
+#hover-deed { position: fixed; z-index: 11; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; pointer-events: none; }
+#hover-deed[hidden] { display: none; }
+#hover-deed > .card { flex: none; width: 260px; margin: 0; border: 6px double #5c636b; }
+#hover-deed table.rent td.note { white-space: normal; } /* the long note wraps in this narrower deed */
 .trade-cash { margin-top: auto; padding-top: 10px; } /* pinned to the bottom, level across both sides */
 .trade-cash input.money, .trade-cash input.money:disabled { color: var(--money); -webkit-text-fill-color: var(--money); }
 .trade-cash input[type=range] { display: block; width: 100%; margin: 4px 0 0; accent-color: var(--money); }
