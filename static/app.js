@@ -190,7 +190,8 @@ function bindStatic() {
     if (b.dataset.act === "trade_with") { closePlayer(); return openTrade(emptyDraft(data.id)); }
     if (b.id === "dice") { // one roll per click; a refused roll makes the dice clickable again
       setRollable(false);
-      return send("roll").then((r) => r || render());
+      const dice = S.dev ? [...$("dev-dice").children].map((el) => (el.value ? Number(el.value) : null)) : null;
+      return send("roll", dice ? { dice } : {}).then((r) => r || render());
     }
     send(b.dataset.act, data);
   });
@@ -365,6 +366,7 @@ function setDice(a, b) {
 function setRollable(on) {
   const el = $("dice");
   el.classList.toggle("ready", on);
+  $("dev-dice").hidden = !(on && S.dev);
   if (on) {
     el.dataset.act = "roll";
     el.setAttribute("role", "button");

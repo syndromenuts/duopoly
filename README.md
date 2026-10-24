@@ -9,6 +9,8 @@ A browser-based, multiplayer game that follows the official Monopoly rules. It r
 python3 server.py            # http://localhost:8000  (set PORT to change)
 ```
 
+Set `DEV=1` to start in dev mode, where the player whose roll it is can pick each die's value from boxes under the dice (leave one on `?` for a random value).
+
 Only the Python standard library is used (3.10+). There is nothing to install.
 
 ### Container

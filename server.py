@@ -14,7 +14,7 @@ TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=u
          ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png",
          ".webp": "image/webp"}
 
-GAME = Game()
+GAME = Game(dev=os.environ.get("DEV") == "1")
 LOCK = threading.Lock()
 SUBSCRIBERS = set()
 BOARD_JSON = json.dumps(board_data()).encode()
@@ -102,7 +102,7 @@ def main():
     port = int(os.environ.get("PORT", "8000"))
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     server.daemon_threads = True
-    print(f"Duopoly running on http://0.0.0.0:{port}", flush=True)
+    print(f"Duopoly running on http://0.0.0.0:{port}{' (dev mode)' if GAME.dev else ''}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -91,6 +91,21 @@ class Movement(unittest.TestCase):
         act(g, a, "end_turn")
         self.assertIs(g.current(), b)
 
+    def test_dev_mode_chooses_roll(self):
+        g, (a, b, c) = new_game()
+        act(g, a, "roll", dice=[1, 2])  # ignored outside dev mode
+        g, (a, b, c) = new_game()
+        g.dev = True
+        act(g, a, "roll", dice=[1, 2])
+        self.assertEqual(g.dice, [1, 2])
+        self.assertEqual(a.pos, 3)
+        resolve_buy(g)
+        act(g, a, "end_turn")
+        with self.assertRaises(GameError):
+            act(g, b, "roll", dice=[0, 7])
+        act(g, b, "roll", dice=[4, None])  # None is random
+        self.assertEqual(g.dice[0], 4)
+
     def test_doubles_roll_again_and_three_doubles_jail(self):
         g, (a, b, c) = new_game()
         g.decks["chest"] = [1] + [i for i in g.decks["chest"] if i != 1]  # bank error, harmless

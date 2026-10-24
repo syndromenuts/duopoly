@@ -64,8 +64,9 @@ class Player:
 
 
 class Game:
-    def __init__(self, rng=None):
+    def __init__(self, rng=None, dev=False):
         self.rng = rng or random.Random()
+        self.dev = dev  # dev mode: players may choose their roll
         self.players = {}
         self.rules = dict(DEFAULT_RULES)
         self.log = []
@@ -323,6 +324,12 @@ class Game:
     def a_roll(self, p, data):
         self.require_turn(p, "roll")
         d1, d2 = self.roll_dice()
+        if self.dev and data.get("dice"):
+            chosen = data["dice"]
+            if not isinstance(chosen, list) or len(chosen) != 2 or \
+                    any(d is not None and (type(d) is not int or not 1 <= d <= 6) for d in chosen):
+                raise GameError("Dice must be two values from 1 to 6.")
+            d1, d2 = (d if d is not None else r for d, r in zip(chosen, (d1, d2)))
         self.dice = [d1, d2]
         self.roll_id += 1
         self.moves = []
@@ -911,5 +918,5 @@ class Game:
             "bank_houses": self.bank_houses, "bank_hotels": self.bank_hotels, "pot": self.pot,
             "debts": self.debts, "auction": self.auction, "auction_queue": self.auction_queue,
             "trades": list(self.trades.values()), "winner": self.winner, "drawn": self.drawn,
-            "log": self.log[-60:], "colors": TOKEN_COLORS,
+            "log": self.log[-60:], "colors": TOKEN_COLORS, "dev": self.dev,
         }
