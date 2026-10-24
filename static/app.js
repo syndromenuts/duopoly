@@ -714,9 +714,9 @@ function deedHtml(pos, inSet = false) {
   let acts = "";
   if (sp.price) {
     const mv = sp.price / 2, fee = Math.ceil(mv / 10);
-    const status = [isMortgaged(pos) && "<b>MORTGAGED</b>", h && (h === 5 ? "hotel" : h + " house(s)")].filter(Boolean);
+    // Buildings need no line of their own: the rent table already highlights the current level.
     if (!owner) html += `<div class="hint">Owner: none (bank)</div>`;
-    else if (status.length) html += `<div class="hint">${status.join(" · ")}</div>`;
+    else if (isMortgaged(pos)) html += `<div class="hint"><b>MORTGAGED</b></div>`;
     html += `<div class="hint">${owner ? `Price $${sp.price}` : `Mortgage value <span class="mortgage">$${mv}</span>`}</div>`;
     const m = me();
     if (owner === myId && S.phase === "playing" && !m.bankrupt) {
