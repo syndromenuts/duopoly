@@ -27,6 +27,7 @@ label { display: block; margin: 4px 0; }
 #center .money, .face .money { color: var(--build); } /* light green would vanish on the pale board and card faces */
 button:not(.secondary) .money { color: inherit; } /* and on the colored buttons */
 .cash-delta { margin-left: .3em; font-size: 2em; font-weight: 700; line-height: 0; vertical-align: -.15em; } /* line-height 0 so it overflows its row rather than growing it */
+.money.short { color: var(--danger); } /* cash net of an unpaid debt */
 .cash-delta.down { color: var(--danger); }
 .cash-delta.up { color: var(--money); }
 /* In the player list and your own box it hangs past the right edge of the side column. #side, not the clipped

@@ -818,9 +818,9 @@ function renderPlayerDetail() {
   const stat = (label, value) => `<div class="pstat"><div class="hint">${label}</div><div>${value}</div></div>`;
   let html = `<h2><span class="dot" style="background:${p.color}"></span> ${esc(p.name)}${p.id === myId ? " (you)" : ""}</h2>
     <div class="hint">${status}${extra.length ? " · " + extra.join(" · ") : ""}</div>
-    <div class="pstats">${stat("Cash", cashHtml(p))}${stat("Total worth", `$${p.cash + raise}`)}${stat("Properties", props.length)}
+    <div class="pstats">${stat("Cash", cashHtml(p))}${stat("Total worth", dollars(netCash(p) + raise))}${stat("Properties", props.length)}
       ${stat("Houses / hotels", `${houses} / ${hotels}`)}${stat("Mortgaged", props.filter(isMortgaged).length)}${stat("Jail cards", p.cards)}</div>
-    <div class="hint">Total worth is cash plus what selling every building and mortgaging every property would raise.</div>`;
+    <div class="hint">Total worth is cash, less any debts, plus what selling every building and mortgaging every property would raise.</div>`;
   for (const d of S.debts.filter((d) => d.debtor === p.id)) html += `<div class="notice bad">Owes <b>$${d.amount}</b> to ${pname(d.creditor)} (${esc(d.reason)}).</div>`;
   html += props.length ? ownedTiles(p.id) : `<div class="hint">No properties.</div>`;
   let acts = "";
@@ -847,7 +847,7 @@ function renderDebt() {
   }
   const left = m.cash - owed; // cash after paying what's owed, so negative until enough is raised
   let html = `<h2>Raise funds</h2>
-    <div class="debt-cash money${left < 0 ? " short" : ""}">${left < 0 ? "-" : ""}$${Math.abs(left)}</div>`;
+    <div class="debt-cash money${left < 0 ? " short" : ""}">${dollars(left)}</div>`;
   if (m.cash + raise < owed) html += `<div class="hint">Selling and mortgaging everything won't cover it. Only a trade can save you now.</div>`;
   html += ownedTiles(myId) || `<div class="hint">You have no properties.</div>`;
   html += `<div class="hint">It is paid automatically once you have enough cash.</div>
@@ -1047,17 +1047,27 @@ const HOLD_MS = 1500, TALLY_MS = 900, FADE_MS = 600;
 const tallies = {}; // player id -> { from, to, start, shown }
 let tallying = false;
 
+// Cash on screen is net of what the player owes, so it goes negative while a debt is unpaid.
+function netCash(p) {
+  return p.cash - (S.debts || []).reduce((sum, d) => sum + (d.debtor === p.id ? d.amount : 0), 0);
+}
+
+function dollars(n) {
+  return `${n < 0 ? "-" : ""}$${Math.abs(n)}`;
+}
+
 function cashHtml(p) {
+  const cash = netCash(p);
   let t = tallies[p.id];
-  if (!t) t = tallies[p.id] = { from: p.cash, to: p.cash, start: -Infinity, shown: p.cash };
-  else if (t.to !== p.cash) {
+  if (!t) t = tallies[p.id] = { from: cash, to: cash, start: -Infinity, shown: cash };
+  else if (t.to !== cash) {
     // A change still on show is cut short, so each one is shown on its own rather than summed with the last.
-    Object.assign(t, { from: t.to, to: p.cash, start: performance.now(), shown: t.to });
+    Object.assign(t, { from: t.to, to: cash, start: performance.now(), shown: t.to });
     if (!tallying) { tallying = true; requestAnimationFrame(tallyFrame); }
   }
   const d = deltaOf(t, performance.now());
   const delta = d.opacity ? `<span class="money cash-delta ${d.cls}" data-delta="${p.id}" style="opacity:${d.opacity}">${d.text}</span>` : "";
-  return `<span class="money" data-cash="${p.id}">$${t.shown}</span>${delta}`;
+  return `<span class="money${t.shown < 0 ? " short" : ""}" data-cash="${p.id}">${dollars(t.shown)}</span>${delta}`;
 }
 
 function deltaOf(t, now) {
@@ -1083,7 +1093,10 @@ function tallyFrame(now) {
     const k = Math.min(1, Math.max(0, age - HOLD_MS) / TALLY_MS);
     t.shown = Math.round(t.from + (t.to - t.from) * (1 - (1 - k) ** 3)); // ease out
     const d = deltaOf(t, now);
-    document.querySelectorAll(`[data-cash="${id}"]`).forEach((el) => (el.textContent = "$" + t.shown));
+    document.querySelectorAll(`[data-cash="${id}"]`).forEach((el) => {
+      el.textContent = dollars(t.shown);
+      el.classList.toggle("short", t.shown < 0);
+    });
     document.querySelectorAll(`[data-delta="${id}"]`).forEach((el) => {
       el.textContent = d.text;
       el.className = `money cash-delta ${d.cls}`;
@@ -1109,7 +1122,7 @@ function showMoney(flows, belowCard = false) {
     if (!id) return `<div class="party"><b>Bank</b></div>`;
     const p = player(id);
     // Their cash runs with the same tally as on the side, which writes into every data-cash span.
-    const cash = p ? `<span class="money cash" data-cash="${id}">$${tallies[id]?.shown ?? p.cash}</span>` : "";
+    const cash = p ? `<span class="money cash" data-cash="${id}">${dollars(tallies[id]?.shown ?? netCash(p))}</span>` : "";
     return `<div class="party"><span class="dot" style="background:${p?.color || "#888"}"></span><b>${esc(p?.name ?? "?")}</b>${cash}</div>`;
   };
   const isPlayer = (id) => id && id !== "pot";
