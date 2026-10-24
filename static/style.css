@@ -193,7 +193,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .deed table.rent { text-align: left; font-size: .9em; }
 .deed .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .deed .acts button { margin: 0; padding: 8px 18px; }
-.deed .acts button.go { background: var(--build); }
+.deed .acts button.go, .jail-card .acts button.go { background: var(--build); }
 #buy-offer .acts button.danger { background: none; color: var(--danger); }
 .deed .acts .line { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; } /* one row of buttons */
 .steady { display: inline-grid; justify-items: center; } /* both words share one cell, sized to the wider */
@@ -286,6 +286,9 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 @media (max-width: 400px) { .pstats { grid-template-columns: repeat(2, 1fr); } }
 .modal > .card.debt-card { border-color: var(--danger); }
 .debt-card .short { color: var(--danger); }
+.modal > .card.jail-card { max-width: 380px; text-align: center; }
+.jail-card .cuffs { display: block; height: 96px; margin: 4px auto 8px; filter: invert(1) brightness(.9); } /* black artwork, lightened for the dark card */
+.jail-card h2 { justify-content: center; }
 .debt-cash { font-size: 40px; font-weight: 700; text-align: center; line-height: 1.2; margin: 6px 0; }
 .offer .acts, .trade-card .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .offer .acts button, .trade-card .acts button { margin: 0; }

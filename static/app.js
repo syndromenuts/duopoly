@@ -206,7 +206,7 @@ function bindStatic() {
     if (b.dataset.act === "hide_debt") return hideDebt();
     if (b.dataset.act === "open_debt") { debtHidden = null; return renderDebt(); }
     if (b.dataset.act === "trade_with") { closePlayer(); return openTrade(emptyDraft(data.id)); }
-    if (b.id === "dice") { // one roll per click; a refused roll makes the dice clickable again
+    if (b.dataset.act === "roll") { // the dice or the jail popup's Roll; one roll per click, a refused roll makes the dice clickable again
       setRollable(false);
       const dice = S.dev ? [...$("dev-dice").children].map((el) => (el.value ? Number(el.value) : null)) : null;
       return send("roll", dice ? { dice } : {}).then((r) => r || render());
@@ -225,7 +225,7 @@ function render() {
   const inGame = S.phase !== "lobby";
   $("lobby").hidden = inGame;
   $("game").hidden = !inGame;
-  if (!inGame) { $("offer-modal").hidden = $("player-modal").hidden = $("debt-modal").hidden = true; return renderLobby(); }
+  if (!inGame) { $("offer-modal").hidden = $("player-modal").hidden = $("debt-modal").hidden = $("jail-modal").hidden = true; return renderLobby(); }
   renderBoard();
   renderMe();
   renderBuyOffer();
@@ -234,6 +234,7 @@ function render() {
   renderPlayers();
   renderPlayerDetail();
   renderDebt();
+  renderJail();
   $("log").innerHTML = S.log.slice().reverse().map((l) => `<li>${esc(l)}</li>`).join("");
   renderProp();
 }
@@ -454,9 +455,15 @@ async function animateMoves(moves, cards = [], flows = []) {
   fly.hidden = true;
   for (const c of S.drawn) if (!cards.includes(c)) revealed.add(c.id); // earlier cards cut short by this roll
   const pid = moves[0]?.player;
+  const settle = () => new Promise((r) => setTimeout(r, Math.max(0, rollingUntil - Date.now()) + 150)); // let the dice settle
   // Background tabs skip it, so returning players see the board as it is now.
   if (!pid || moves.some((m) => m.player !== pid) || document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) {
     for (const c of S.drawn) revealed.add(c.id);
+    // A roll with no move (a failed try to leave Jail) still waits for the dice, so End turn doesn't show over them.
+    if (!moves.length && !document.hidden) {
+      await settle();
+      if (run !== animateMoves.run) return;
+    }
     return finishRoll();
   }
   const pending = [...cards];
@@ -470,7 +477,7 @@ async function animateMoves(moves, cards = [], flows = []) {
     const kf = [a, mid, b].map(([x, y], k) => ({ transform: `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${k === 1 ? 1.35 : 1})` }));
     return tok.animate(kf, { duration: ms, easing: "ease-in-out" }).finished.then(() => place(b), () => {});
   };
-  await new Promise((r) => setTimeout(r, Math.max(0, rollingUntil - Date.now()) + 150)); // let the dice settle
+  await settle();
   for (const m of moves) {
     if (run !== animateMoves.run) return;
     if (m.how === "jump") {
@@ -849,6 +856,24 @@ function renderDebt() {
   if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
 }
 
+// At the start of a turn in Jail, a popup offers the ways out: roll for doubles, pay $50, or use a card.
+// It can't be dismissed; it closes once one is chosen.
+function renderJail() {
+  const m = me(), modal = $("jail-modal");
+  modal.hidden = !(m && !m.bankrupt && m.in_jail && S.phase === "playing" && myTurn() && !animating && S.stage === "roll") || !$("debt-modal").hidden;
+  if (modal.hidden) return;
+  const wait = S.blocked ? waitingReason() : "";
+  let html = `<img class="cuffs" src="handcuffs.png" alt=""><h2>You are in Jail</h2>
+    <div class="hint">Attempt ${m.jail_turns + 1} of 3. Roll doubles to get out free.${m.jail_turns === 2 ? " If this roll fails, you pay $50 and move anyway." : ""}</div>
+    <div class="debt-cash money">${cashHtml(m)}</div>`;
+  if (wait) html += `<div class="hint">Waiting: ${wait}</div>`;
+  else if (m.cash < 50) html += `<div class="hint">You need $50 to pay. You can mortgage or sell to raise it.</div>`;
+  html += `<div class="acts">${btn("Roll the dice", "roll", null, "go", !!wait)}${btn("Pay $50", "pay_jail", null, "", !!wait || m.cash < 50)}`
+    + `${m.cards ? btn("Use Get Out of Jail Free", "use_card", null, "", !!wait) : ""}</div>`;
+  const body = $("jail-body");
+  if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
+}
+
 function hideDebt() {
   const d = S.debts.find((x) => x.debtor === myId);
   debtHidden = d ? JSON.stringify(d) : null;
@@ -1136,7 +1161,7 @@ function showMoney(flows, belowCard = false) {
 // Shows the payments in the state on screen that have not been shown yet.
 function showFlows() {
   const fresh = S.flows.filter((f) => !flowsShown.has(f.id));
-  const side = (f) => f.go || f.buy; // GO salary and property purchases show on the side only
+  const side = (f) => f.go || f.buy || f.jail; // GO salary, property purchases and the Jail fine show on the side only
   fresh.forEach((f) => side(f) && flowsShown.add(f.id));
   if (S.phase !== "lobby") showMoney(fresh.filter((f) => !side(f)));
 }
