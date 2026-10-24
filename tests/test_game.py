@@ -221,6 +221,7 @@ class Auctions(unittest.TestCase):
         self.assertEqual(g.owners[3], c.id)
         self.assertEqual(c.cash, 1480)
         self.assertEqual(g.stage, "done")
+        self.assertEqual(g.state()["last_auction"], {"n": 1, "kind": "property", "pos": 3, "winner": c.id, "high": 20})
 
     def test_no_bids_stays_with_bank(self):
         g, (a, b, c) = new_game()
@@ -229,6 +230,7 @@ class Auctions(unittest.TestCase):
         for p in (a, b, c):
             act(g, p, "pass")
         self.assertNotIn(3, g.owners)
+        self.assertIsNone(g.last_auction["winner"])
 
     def test_cannot_bid_over_cash(self):
         g, (a, b, c) = new_game()

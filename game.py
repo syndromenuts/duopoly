@@ -100,6 +100,7 @@ class Game:
         self.debts = []
         self.auction = None
         self.auction_queue = []
+        self.last_auction = None  # how the latest auction ended, for the result shown to everyone
         self.trades = {}
         self.next_trade = 1
         self.winner = None
@@ -472,6 +473,8 @@ class Game:
         if a["active"] and not (a["bidder"] and a["active"] == [a["bidder"]]):
             return
         self.auction = None
+        self.last_auction = {"n": (self.last_auction or {}).get("n", 0) + 1, "kind": a["kind"], "pos": a["pos"],
+                             "winner": a["bidder"], "high": a["high"]}
         what = SPACES[a["pos"]]["name"] if a["kind"] == "property" else f"a {a['kind']}"
         if a["bidder"]:
             w = self.players[a["bidder"]]
@@ -946,6 +949,7 @@ class Game:
             "mortgaged": sorted(self.mortgaged),
             "bank_houses": self.bank_houses, "bank_hotels": self.bank_hotels, "pot": self.pot,
             "debts": self.debts, "auction": self.auction, "auction_queue": self.auction_queue,
+            "last_auction": self.last_auction,
             "trades": list(self.trades.values()), "winner": self.winner, "drawn": self.drawn,
             "flows": self.flows,
             "log": self.log[-60:], "colors": TOKEN_COLORS, "dev": self.dev,

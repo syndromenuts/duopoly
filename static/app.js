@@ -14,6 +14,8 @@ let myId = localStorage.getItem("duopoly-id") || "";
 let openProp = null; // board position shown in the property dialog
 let tradeDraft = null;
 let seenTrade = null; // id of the open trade already put on screen
+let seenAuction = null; // number of the latest finished auction already shown
+let auctionResultUntil = 0; // until when the popup stays up showing who won
 let openPlayer = null; // id of the player shown in the player popup
 let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
@@ -151,10 +153,15 @@ function bindStatic() {
   });
   $("start-cash").onchange = (e) => send("set_rule", { key: "start_cash", value: e.target.value });
 
+  // The step buttons build up the amount in the box; Bid sends it.
   document.querySelectorAll("[data-inc]").forEach((b) => {
-    b.onclick = () => send("bid", { amount: S.auction.high + Number(b.dataset.inc) });
+    b.onclick = () => { $("bid-amount").value = bidBase() + Number(b.dataset.inc); renderBidSteps(); };
   });
+  $("bid-amount").oninput = renderBidSteps;
+  // The result can be waved away early by clicking beside it.
+  $("auction").onclick = (e) => { if (e.target.id === "auction" && !S.auction) { auctionResultUntil = 0; renderAuction(); } };
   $("bid-btn").onclick = () => send("bid", { amount: Number($("bid-amount").value) }).then((r) => r && ($("bid-amount").value = ""));
+  $("bid-amount").onkeydown = (e) => { if (e.key === "Enter") $("bid-btn").click(); };
   $("pass-btn").onclick = () => send("pass");
 
   document.addEventListener("visibilitychange", () => {
@@ -652,18 +659,77 @@ function renderBuyOffer() {
   $("buy-body").innerHTML = html;
 }
 
+// A running auction pops up over every player's screen: the property's card beside the current bid,
+// with bid buttons for those still in and a watch-only view for everyone else.
+// Once it ends, the popup stays a few seconds to show who won and for how much.
+const AUCTION_RESULT_MS = 3500;
 function renderAuction() {
-  const a = S.auction;
-  $("auction").hidden = !a;
-  if (!a) return;
-  const what = a.kind === "property" ? esc(space(a.pos).name) : `one ${a.kind} (building shortage)`;
-  const active = a.active.map((id) => pname(id)).join(", ");
-  $("auction-info").innerHTML = `<h3>Auction: ${what}</h3>
-    <div>High bid: <b>$${a.high}</b>${a.bidder ? ` by ${pname(a.bidder)}` : " (no bids yet)"}</div>
-    <div class="hint">Still in: ${active}. Ends when everyone else passes.</div>`;
-  const inIt = a.active.includes(myId);
+  const r = S.last_auction;
+  if (seenAuction === null) seenAuction = r?.n ?? 0; // auctions that ended before we connected aren't replayed
+  else if (r && r.n !== seenAuction) {
+    seenAuction = r.n;
+    auctionResultUntil = Date.now() + AUCTION_RESULT_MS;
+    setTimeout(renderAuction, AUCTION_RESULT_MS);
+  }
+  const a = S.auction, done = !a && Date.now() < auctionResultUntil ? r : null;
+  $("auction").hidden = !a && !done;
+  if (!a) $("bid-amount").value = ""; // a half-built bid doesn't carry over to the next auction
+  if (!a && !done) return;
+  const lot = a || done;
+  let deed;
+  if (lot.kind === "property") {
+    const sp = space(lot.pos);
+    const rent = sp.type === "utility" ? `<div class="hint">Rent 4× the dice, 10× with both utilities</div>` : rentTable(sp, -1);
+    deed = `${propHead(sp)}<div class="hint">Listed at $${sp.price}</div>${rent}`;
+  } else {
+    deed = `<div class="prop-head" style="background:${lot.kind === "hotel" ? "var(--hotel)" : "var(--build)"}">One ${lot.kind}</div>
+      <div class="hint">Building shortage: the bank has run low, so the last ${lot.kind} goes to the highest bidder.</div>`;
+  }
+  const deedBox = $("auction-deed");
+  if (deedBox.dataset.html !== deed) { deedBox.innerHTML = deed; deedBox.dataset.html = deed; }
+
+  $("auction").classList.toggle("done", !!done);
+  if (done) {
+    const w = player(done.winner);
+    $("auction-info").innerHTML = w
+      ? `<div class="label">Sold</div><div class="high">$${done.high}</div>
+        <div class="by"><span class="dot" style="background:${w.color}"></span> ${esc(w.name)}${w.id === myId ? " (you)" : ""}</div>
+        <div class="hint">${w.id === myId ? "You won the auction" : "won the auction"}</div>`
+      : `<div class="label">No sale</div><div class="by">Nobody bid</div><div class="hint">It stays with the bank.</div>`;
+    $("auction-controls").hidden = true;
+    return;
+  }
+
+  const lead = player(a.bidder);
+  const inIt = a.active.includes(myId), leading = a.bidder === myId;
+  const others = a.active.filter((id) => id !== a.bidder);
+  let status;
+  if (leading) status = others.length ? "You're the highest bidder" : "You're winning";
+  else if (inIt) status = a.bidder ? "Outbid them or pass" : "Open the bidding or pass";
+  else status = "You're out of this auction, watching";
+  $("auction-info").innerHTML = `<div class="label">Auction</div>
+    <div class="high">$${a.high}</div>
+    <div class="by">${lead ? `<span class="dot" style="background:${lead.color}"></span> ${esc(lead.name)}${leading ? " (you)" : ""}` : "No bids yet"}</div>
+    <div class="hint">${status}</div>
+    <div class="hint">Still in: ${a.active.map((id) => `<span class="dot" style="background:${player(id)?.color}"></span> ${pname(id)}`).join(", ")}</div>`;
+
   $("auction-controls").hidden = !inIt;
-  $("pass-btn").disabled = a.bidder === myId;
+  if (!inIt) return;
+  const cash = me().cash;
+  renderBidSteps();
+  $("bid-amount").min = a.high + 1;
+  $("bid-amount").max = cash;
+  $("bid-btn").disabled = leading;
+  $("pass-btn").disabled = leading;
+}
+
+// The steps add to the amount typed so far, or to the high bid once that has caught up with it.
+const bidBase = () => Math.max(Number($("bid-amount").value) || 0, S.auction.high);
+function renderBidSteps() {
+  const a = S.auction;
+  if (!a || !a.active.includes(myId)) return;
+  const base = bidBase(), cash = me().cash;
+  document.querySelectorAll("[data-inc]").forEach((b) => (b.disabled = a.bidder === myId || base + Number(b.dataset.inc) > cash));
 }
 
 // The one open trade sits in the middle of every player's screen until it's answered.

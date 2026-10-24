@@ -53,23 +53,33 @@
   </div>
   <aside id="side">
     <div id="me" class="card"></div>
-    <div id="auction" class="card" hidden>
-      <div id="auction-info"></div>
-      <div id="auction-controls">
-        <button data-inc="1">+$1</button>
-        <button data-inc="10">+$10</button>
-        <button data-inc="100">+$100</button>
-        <input id="bid-amount" type="number" min="1" placeholder="Amount">
-        <button id="bid-btn">Bid</button>
-        <button id="pass-btn" class="secondary">Pass</button>
-      </div>
-    </div>
     <div id="trade-act"></div>
     <div class="card collapsed" id="log-card"><h3 id="log-toggle" role="button" tabindex="0" title="Show or hide the full log">Log</h3><ol id="log" class="plain"></ol></div>
     <div id="game-acts"></div>
     <ol id="turns" class="plain"></ol>
   </aside>
 </section>
+
+<div id="auction" class="modal" hidden>
+  <div class="card auction-card">
+    <div class="deed" id="auction-deed"></div>
+    <div id="auction-bid">
+      <div id="auction-info"></div>
+      <div id="auction-controls">
+        <div class="line">
+          <button data-inc="1">+$1</button>
+          <button data-inc="10">+$10</button>
+          <button data-inc="100">+$100</button>
+        </div>
+        <div class="line">
+          <input id="bid-amount" type="number" min="1" placeholder="Amount">
+          <button id="bid-btn" class="accept">Bid</button>
+        </div>
+        <button id="pass-btn" class="danger">Pass</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="player-modal" class="modal" hidden><div class="card player-card" id="player-body"></div></div>
 

@@ -227,8 +227,6 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #log-card.collapsed #log-toggle::after { transform: translateY(-.15em) rotate(45deg); }
 #log-card.collapsed #log li:not(:first-child) { display: none; }
 #log-card.collapsed #log li { border-bottom: none; }
-#auction { border: 2px solid var(--warn); }
-#auction-controls { margin-top: 6px; }
 
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
 .modal[hidden] { display: none; }
@@ -243,6 +241,24 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .deeds > .deed .acts { margin-top: auto; padding-top: 12px; }
 .modal > .card.offer, .modal > .card.trade-card { max-width: 860px; text-align: center; }
 .offer h2 { margin-top: 0; }
+/* the auction popup: the property's card beside the current bid and the bid buttons */
+.modal > .card.auction-card { max-width: 640px; display: flex; flex-wrap: wrap; gap: 16px; border: 2px solid var(--warn); }
+.auction-card > .deed { flex: 1 1 240px; }
+#auction-bid { flex: 1 1 240px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+#auction-info .label { color: var(--warn); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+#auction.done .card { border-color: var(--money); }
+#auction.done #auction-info .label { color: var(--money); }
+#auction-info .high { font-size: 3.4em; font-weight: 700; line-height: 1.1; color: var(--money); }
+#auction-info .by { font-size: 1.3em; font-weight: 700; margin-bottom: 6px; }
+#auction-info .by .dot { width: 16px; height: 16px; }
+#auction-info .hint { margin-top: 4px; }
+#auction-controls { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+#auction-controls .line { display: flex; gap: 8px; }
+#auction-controls .line > * { flex: 1; min-width: 0; margin: 0; }
+#auction-controls button { margin: 0; padding: 8px 12px; }
+#auction-controls [data-inc] { background: none; color: var(--accent); }
+#auction-controls #pass-btn { background: none; color: var(--danger); }
+@media (max-width: 560px) { #auction-bid { order: -1; } } /* stacked on a phone, the bid comes before the card */
 .modal > .card.player-card { max-width: 480px; }
 .player-card h2 { margin-top: 0; display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere; }
 .pstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 6px; }
