@@ -549,8 +549,9 @@ function ownedTiles(id) {
     const sp = space(pos), kind = squareKind(sp), h = housesOn(pos);
     // Buildings sit in the colour strip, drawn as on the board.
     const bld = h ? `<span class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "" : "■".repeat(h)}</span>` : "";
-    return `<button type="button" class="tprop${isMortgaged(pos) ? " m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
-      <span class="strip ${kind}"${kind ? "" : ` style="background:${groupColor(pos)}"`}>${bld}</span><span class="nm">${esc(sp.name)}</span></button>`;
+    // Stations and utilities are tinted all over instead of carrying a strip.
+    return `<button type="button" class="tprop${kind ? " " + kind : ""}${isMortgaged(pos) ? " m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
+      ${kind ? "" : `<span class="strip" style="background:${groupColor(pos)}">${bld}</span>`}<span class="nm">${esc(sp.name)}</span></button>`;
   }).join("") + `</div>`;
 }
 
@@ -767,9 +768,9 @@ function tradeSide(who, key, side, editable) {
   let html = `<div class="trade-side"><h3><span class="dot" style="background:${p.color}"></span> ${who === myId ? "You" : esc(p.name)}</h3>`;
   html += `<div class="trade-props">` + props.map((pos) => {
     const sp = space(pos), kind = squareKind(sp), locked = groupHasBuildings(pos);
-    const cls = `tprop${side.props.includes(pos) ? " on" : ""}${isMortgaged(pos) ? " m" : ""}`;
+    const cls = `tprop${kind ? " " + kind : ""}${side.props.includes(pos) ? " on" : ""}${isMortgaged(pos) ? " m" : ""}`;
     const title = locked ? "Sell the group's buildings before trading it" : isMortgaged(pos) ? "Mortgaged" : "";
-    const inner = `<span class="strip ${kind}"${kind ? "" : ` style="background:${groupColor(pos)}"`}></span><span class="nm">${esc(sp.name)}</span>`;
+    const inner = `${kind ? "" : `<span class="strip" style="background:${groupColor(pos)}"></span>`}<span class="nm">${esc(sp.name)}</span>`;
     return editable
       ? `<button type="button" class="${cls}" data-side="${key}" data-pos="${pos}" title="${title}"${locked ? " disabled" : ""}>${inner}</button>`
       : `<div class="${cls}" title="${title}">${inner}</div>`;
