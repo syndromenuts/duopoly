@@ -166,7 +166,6 @@ function bindStatic() {
   };
   $("trade-modal").onclick = (e) => { if (e.target.id === "trade-modal") closeTrade(); };
   document.querySelectorAll(".trade-close").forEach((b) => (b.onclick = closeTrade));
-  $("trade-back").onclick = () => openTrade();
   $("trade-send").onclick = async () => {
     if (await send("propose_trade", tradeDraft)) closeTrade();
   };
@@ -186,7 +185,6 @@ function bindStatic() {
     const b = e.target.closest("[data-act]");
     if (!b) return;
     const data = b.dataset.arg ? JSON.parse(b.dataset.arg) : {};
-    if (b.dataset.act === "open_trade") return openTrade();
     if (b.dataset.act === "counter") return counterTrade(data.id);
     if (b.dataset.act === "view_player") { openPlayer = data.id; return renderPlayerDetail(); }
     if (b.dataset.act === "trade_with") { closePlayer(); return openTrade(emptyDraft(data.id)); }
@@ -532,7 +530,13 @@ function renderMe() {
     if (votes) acts += `<div class="hint">${votes} vote(s) to end the game. Every connected player must vote.</div>`;
   }
   $("game-acts").innerHTML = acts;
-  $("trade-act").innerHTML = S.phase === "playing" && !m.bankrupt ? btn("Propose trade", "open_trade", {}, "warn", !!S.auction || !!S.trades.length) : "";
+  // Propose a trade by clicking a player; locked during an auction or while a trade is open.
+  const others = S.order.map(player).filter((p) => p.id !== myId && !p.bankrupt);
+  const locked = !!S.auction || !!S.trades.length;
+  $("trade-act").innerHTML = S.phase === "playing" && !m.bankrupt && others.length
+    ? `<div class="card"><h3>Propose trade</h3><ul class="plain">` + others.map((p) => `<li><button type="button" class="secondary" data-act="trade_with"
+        data-arg='${JSON.stringify({ id: p.id })}'${locked ? " disabled" : ""}><span class="dot" style="background:${p.color}"></span><span class="nm">${esc(p.name)}</span><span>$${p.cash}</span></button></li>`).join("") + `</ul></div>`
+    : "";
 }
 
 // A player's properties as deed tiles in board order (so color groups sit together); clicking one opens its dialog.
@@ -720,22 +724,11 @@ function emptyDraft(to) {
   return { to, give: { cash: 0, props: [], cards: 0 }, get: { cash: 0, props: [], cards: 0 } };
 }
 
-// Opens the trade popup: first a list of players to trade with, or straight to the form for a ready draft.
-function openTrade(draft = null) {
-  const others = S.players.filter((p) => p.id !== myId && !p.bankrupt && S.order.includes(p.id));
-  if (!others.length) return;
+// Opens the trade form for a draft.
+function openTrade(draft) {
   $("trade-modal").hidden = false;
-  $("trade-pick").hidden = !!draft;
-  $("trade-form").hidden = !draft;
-  $("trade-modal").firstElementChild.classList.toggle("picking", !draft);
-  if (draft) {
-    tradeDraft = draft;
-    return renderTradeForm();
-  }
-  tradeDraft = null;
-  $("trade-players").innerHTML = others.map((p) => `<li><button type="button" class="secondary" data-to="${p.id}">
-    <span class="dot" style="background:${p.color}"></span><span class="nm">${esc(p.name)}</span><span>$${p.cash}</span></button></li>`).join("");
-  $("trade-players").querySelectorAll("[data-to]").forEach((b) => (b.onclick = () => openTrade(emptyDraft(b.dataset.to))));
+  tradeDraft = draft;
+  renderTradeForm();
 }
 
 function counterTrade(id) {
