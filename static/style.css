@@ -216,7 +216,8 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 
 #me .me-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; } /* cash in the top right corner */
 #me .cash { font-size: 22px; font-weight: 700; line-height: 1; white-space: nowrap; }
-#me .trade-props { margin: 8px 0 2px; }
+#me .trade-props { margin: 8px 0 2px; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; } /* five to a row */
+#me .tprop { font-size: 10px; }
 #me .notice, .player-card .notice { background: #3a2c16; border-left: 4px solid var(--warn); padding: 6px 8px; margin: 8px 0; }
 #me .notice.bad, .player-card .notice.bad { background: #3d1c1e; border-left-color: var(--danger); }
 #log { max-height: 220px; overflow-y: auto; font-size: 12px; }
