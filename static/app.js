@@ -13,6 +13,7 @@ let token = localStorage.getItem("duopoly-token") || "";
 let myId = localStorage.getItem("duopoly-id") || "";
 let openProp = null; // board position shown in the property dialog
 let tradeDraft = null;
+let openTradeId = null; // trade shown in the details popup
 const laterOffers = new Set(); // incoming trade ids put aside from the center popup
 let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
@@ -159,6 +160,7 @@ function bindStatic() {
   });
 
   $("prop-modal").onclick = (e) => { if (e.target.id === "prop-modal") { openProp = null; renderProp(); } };
+  $("detail-modal").onclick = (e) => { if (e.target.id === "detail-modal") closeTradeDetail(); };
   $("trade-modal").onclick = (e) => { if (e.target.id === "trade-modal") closeTrade(); };
   document.querySelectorAll(".trade-close").forEach((b) => (b.onclick = closeTrade));
   $("trade-back").onclick = () => openTrade();
@@ -177,6 +179,7 @@ function bindStatic() {
     const data = b.dataset.arg ? JSON.parse(b.dataset.arg) : {};
     if (b.dataset.act === "open_trade") return openTrade();
     if (b.dataset.act === "counter") return counterTrade(data.id);
+    if (b.dataset.act === "view_trade") { openTradeId = data.id; return renderTradeDetail(); }
     if (b.id === "dice") { // one roll per click; a refused roll makes the dice clickable again
       setRollable(false);
       return send("roll").then((r) => r || render());
@@ -195,7 +198,7 @@ function render() {
   const inGame = S.phase !== "lobby";
   $("lobby").hidden = inGame;
   $("game").hidden = !inGame;
-  if (!inGame) { $("offer-modal").hidden = true; return renderLobby(); }
+  if (!inGame) { $("offer-modal").hidden = $("detail-modal").hidden = true; return renderLobby(); }
   renderBoard();
   renderMe();
   renderBuyOffer();
@@ -578,32 +581,17 @@ function renderAuction() {
   $("pass-btn").disabled = a.bidder === myId;
 }
 
-function sideText(side) {
-  const parts = [];
-  if (side.cash) parts.push(`$${side.cash}`);
-  for (const pos of side.props) parts.push(`<span class="chip" style="background:${groupColor(pos)}"></span>${esc(space(pos).name)}${isMortgaged(pos) ? " (mortgaged)" : ""}`);
-  if (side.cards) parts.push(`${side.cards} jail card(s)`);
-  return parts.join(", ") || "nothing";
-}
-
+// The side box lists the open trades you're in, one button each; clicking one shows its details.
 function renderTrades() {
   const mine = S.trades.filter((t) => t.from === myId || t.to === myId);
-  let html = `<h3>Trades</h3>`;
-  if (!mine.length) html += `<div class="hint">No open trades.</div>`;
-  for (const t of mine) {
-    const incoming = t.to === myId;
-    html += `<div class="trade">${tradeText(t)}<br>`;
-    html += incoming ? offerButtons(t) : btn("Cancel", "reject_trade", { id: t.id }, "secondary");
-    html += `</div>`;
-  }
-  $("trades").innerHTML = html;
+  $("trades").hidden = !mine.length;
+  $("trades").innerHTML = `<h3>Trades</h3>` + mine.map((t) => {
+    const other = t.to === myId ? t.from : t.to;
+    return `<button class="trade secondary" data-act="view_trade" data-arg='${JSON.stringify({ id: t.id })}'>
+      <span class="dot" style="background:${player(other)?.color}"></span> ${t.to === myId ? "Offer from" : "Offer to"} <b>${pname(other)}</b></button>`;
+  }).join("");
   renderOffer();
-}
-
-function tradeText(t) {
-  const incoming = t.to === myId;
-  return `${incoming ? `<b>${pname(t.from)}</b> offers you` : `You offer <b>${pname(t.to)}</b>`}:
-    ${sideText(t.give)}<br>${incoming ? "and wants" : "for"}: ${sideText(t.get)}`;
+  renderTradeDetail();
 }
 
 const offerButtons = (t) =>
@@ -620,6 +608,27 @@ function renderOffer() {
     <div class="acts">${offerButtons(t)}</div>`;
   const body = $("offer-body");
   if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
+}
+
+// A trade's details, laid out like the received-offer popup but with no Accept, Counter or Reject.
+function renderTradeDetail() {
+  const t = S.trades.find((x) => x.id === openTradeId);
+  const modal = $("detail-modal");
+  modal.hidden = !t;
+  if (!t) { openTradeId = null; return; }
+  const incoming = t.to === myId;
+  const view = incoming ? tradeView([myId, "get", t.get], [t.from, "give", t.give], false)
+    : tradeView([myId, "give", t.give], [t.to, "get", t.get], false);
+  let acts = incoming ? "" : btn("Withdraw offer", "reject_trade", { id: t.id }, "danger");
+  acts += `<button class="secondary" onclick="closeTradeDetail()">Close</button>`;
+  const html = `<h2>${incoming ? `Trade offer from ${pname(t.from)}` : `Your offer to ${pname(t.to)}`}</h2>${view}<div class="acts">${acts}</div>`;
+  const body = $("detail-body");
+  if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
+}
+
+function closeTradeDetail() {
+  openTradeId = null;
+  $("detail-modal").hidden = true;
 }
 
 function renderPlayers() {
