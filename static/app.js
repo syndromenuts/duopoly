@@ -13,6 +13,7 @@ let token = localStorage.getItem("duopoly-token") || "";
 let myId = localStorage.getItem("duopoly-id") || "";
 let openProp = null; // board position shown in the property dialog
 let tradeDraft = null;
+const laterOffers = new Set(); // incoming trade ids put aside from the center popup
 let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
 let rollingUntil = 0;
@@ -158,6 +159,7 @@ function bindStatic() {
   });
 
   $("prop-modal").onclick = (e) => { if (e.target.id === "prop-modal") { openProp = null; renderProp(); } };
+  $("offer-modal").onclick = (e) => { if (e.target.id === "offer-modal") laterOffer(); };
   $("trade-modal").onclick = (e) => { if (e.target.id === "trade-modal") closeTrade(); };
   $("trade-close").onclick = closeTrade;
   $("trade-partner").onchange = (e) => { tradeDraft = emptyDraft(e.target.value); renderTradeForm(); };
@@ -176,6 +178,7 @@ function bindStatic() {
     const data = b.dataset.arg ? JSON.parse(b.dataset.arg) : {};
     if (b.dataset.act === "open_trade") return openTrade(data);
     if (b.dataset.act === "counter") return counterTrade(data.id);
+    if (b.dataset.act === "later") return laterOffer();
     if (b.id === "dice") { // one roll per click; a refused roll makes the dice clickable again
       setRollable(false);
       return send("roll").then((r) => r || render());
@@ -194,7 +197,7 @@ function render() {
   const inGame = S.phase !== "lobby";
   $("lobby").hidden = inGame;
   $("game").hidden = !inGame;
-  if (!inGame) return renderLobby();
+  if (!inGame) { $("offer-modal").hidden = true; return renderLobby(); }
   renderBoard();
   renderMe();
   renderBuyOffer();
@@ -590,14 +593,40 @@ function renderTrades() {
   if (!mine.length) html += `<div class="hint">No open trades.</div>`;
   for (const t of mine) {
     const incoming = t.to === myId;
-    html += `<div class="trade">${incoming ? `<b>${pname(t.from)}</b> offers you` : `You offer <b>${pname(t.to)}</b>`}:
-      ${sideText(t.give)}<br>${incoming ? "and wants" : "for"}: ${sideText(t.get)}<br>`;
-    html += incoming
-      ? btn("Accept", "accept_trade", { id: t.id }) + btn("Counter", "counter", { id: t.id }, "secondary") + btn("Reject", "reject_trade", { id: t.id }, "secondary")
-      : btn("Cancel", "reject_trade", { id: t.id }, "secondary");
+    html += `<div class="trade">${tradeText(t)}<br>`;
+    html += incoming ? offerButtons(t) : btn("Cancel", "reject_trade", { id: t.id }, "secondary");
     html += `</div>`;
   }
   $("trades").innerHTML = html;
+  renderOffer();
+}
+
+function tradeText(t) {
+  const incoming = t.to === myId;
+  return `${incoming ? `<b>${pname(t.from)}</b> offers you` : `You offer <b>${pname(t.to)}</b>`}:
+    ${sideText(t.give)}<br>${incoming ? "and wants" : "for"}: ${sideText(t.get)}`;
+}
+
+const offerButtons = (t) =>
+  btn("Accept", "accept_trade", { id: t.id }) + btn("Counter", "counter", { id: t.id }, "secondary") + btn("Reject", "reject_trade", { id: t.id }, "secondary");
+
+// The oldest incoming offer not yet put aside pops up in the middle of the screen.
+function renderOffer() {
+  const t = S.trades.find((x) => x.to === myId && !laterOffers.has(x.id));
+  const modal = $("offer-modal");
+  modal.hidden = !t;
+  if (!t) return;
+  const html = `<h2>Trade offer</h2><div class="trade-text">${tradeText(t)}</div>
+    <div class="acts">${offerButtons(t)}${btn("Later", "later", null, "secondary")}</div>`;
+  const body = $("offer-body");
+  if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
+  modal.dataset.id = t.id;
+}
+
+// Leaves the shown offer in the Trades panel without the popup.
+function laterOffer() {
+  laterOffers.add(Number($("offer-modal").dataset.id));
+  renderOffer();
 }
 
 function renderPlayers() {
@@ -675,6 +704,8 @@ function openTrade() {
 function counterTrade(id) {
   const t = S.trades.find((x) => x.id === id);
   if (!t) return;
+  laterOffers.add(id);
+  renderOffer();
   openTrade();
   send("reject_trade", { id });
   $("trade-partner").value = t.from;
