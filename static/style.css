@@ -8,7 +8,7 @@
   --money: #9be89b; --build: #1a7f37; --hotel: #c53030; --chance: #ee8a43; --chest: #4482c6;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: var(--bg) url("dark-wood-darker.webp") center / cover fixed; color: var(--fg); }
+body { margin: 0; font: 14px/1.4 Georgia, "Times New Roman", serif; background: var(--bg) url("dark-wood-darker.webp") center / cover fixed; color: var(--fg); }
 h1 { margin: 16px 0; text-align: center; letter-spacing: 2px; }
 h2 { font-size: 16px; margin: 0 0 8px; }
 h3 { font-size: 14px; margin: 0 0 6px; }
