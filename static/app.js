@@ -265,13 +265,13 @@ const JAIL_BARS = `<svg class="bars" viewBox="0 0 40 40"><path d="M6.75 0v40M15 
 // Pictures for the middle of the Chance, Community Chest, tax, station, utility, Free Parking and Go To Jail squares.
 const SQUARE_ICONS = {
   chance: `<svg class="icon" viewBox="0 0 24 24"><path d="M8 8.5a4 4 0 1 1 5.6 3.7c-1 .45-1.6 1.3-1.6 2.3v1.5"/><circle class="fill" cx="12" cy="19.5" r="1.4"/></svg>`,
-  chest: `<img class="icon" src="chest.png" alt="">`,
-  tax: `<img class="icon tax" src="flying-money.png" alt="">`,
-  station: `<img class="icon station" src="train-station.png" alt="">`,
-  power: `<img class="icon station power" src="light-bulb.png" alt="">`, // sized like the station sign
-  water: `<img class="icon station water" src="faucet.png" alt="">`,
-  parking: `<img class="icon parking" src="car.png" alt="">`,
-  gotojail: `<img class="icon gotojail" src="police.png" alt="">`,
+  chest: `<img class="icon" src="images/chest.png" alt="">`,
+  tax: `<img class="icon tax" src="images/flying-money.png" alt="">`,
+  station: `<img class="icon station" src="images/train-station.png" alt="">`,
+  power: `<img class="icon station power" src="images/light-bulb.png" alt="">`, // sized like the station sign
+  water: `<img class="icon station water" src="images/faucet.png" alt="">`,
+  parking: `<img class="icon parking" src="images/car.png" alt="">`,
+  gotojail: `<img class="icon gotojail" src="images/police.png" alt="">`,
 };
 
 // Where inmates stand in the box, as % of its width: up to 3 to a row, clear of the lock plate, the
@@ -328,7 +328,7 @@ function renderBoard() {
 }
 
 const CARD_EASE = "cubic-bezier(.65, 0, .35, 1)"; // ease in and out, firmer than the CSS keyword
-const cardHtml = (c) => `<div class="hd">${c.deck === "chance" ? "CHANCE" : '<img src="chest.png" alt="">COMMUNITY CHEST'}</div><div class="tx"><p>${esc(c.text)}</p></div>`;
+const cardHtml = (c) => `<div class="hd">${c.deck === "chance" ? "CHANCE" : '<img src="images/chest.png" alt="">COMMUNITY CHEST'}</div><div class="tx"><p>${esc(c.text)}</p></div>`;
 
 // Each deck shows the front of the latest card from it that finished its flight this turn.
 function renderDecks() {
@@ -612,7 +612,7 @@ function renderMe() {
   const others = S.order.map(player).filter((p) => p.id !== myId && !p.bankrupt);
   const locked = !!S.auction || !!S.trades.length;
   $("trade-act").innerHTML = S.phase === "playing" && !m.bankrupt && others.length
-    ? `<div class="card"><h3>Propose trade<img class="handshake" src="handshake.png" alt=""></h3><ul class="plain">` + others.map((p) => `<li><button type="button" class="secondary" data-act="trade_with"
+    ? `<div class="card"><h3>Propose trade<img class="handshake" src="images/handshake.png" alt=""></h3><ul class="plain">` + others.map((p) => `<li><button type="button" class="secondary" data-act="trade_with"
         data-arg='${JSON.stringify({ id: p.id })}'${locked ? " disabled" : ""}><span class="dot" style="background:${p.color}"></span><span class="nm">${esc(p.name)}</span><span>$${p.cash}</span></button></li>`).join("") + `</ul></div>`
     : "";
 }
@@ -863,7 +863,7 @@ function renderJail() {
   modal.hidden = !(m && !m.bankrupt && m.in_jail && S.phase === "playing" && myTurn() && !animating && S.stage === "roll") || !$("debt-modal").hidden;
   if (modal.hidden) return;
   const wait = S.blocked ? waitingReason() : "";
-  let html = `<img class="cuffs" src="handcuffs.png" alt=""><h2>You are in Jail</h2>
+  let html = `<img class="cuffs" src="images/handcuffs.png" alt=""><h2>You are in Jail</h2>
     <div class="hint">Attempt ${m.jail_turns + 1} of 3. Roll doubles to get out free.${m.jail_turns === 2 ? " If this roll fails, you pay $50 and move anyway." : ""}</div>
     <div class="debt-cash money">${cashHtml(m)}</div>`;
   if (wait) html += `<div class="hint">Waiting: ${wait}</div>`;
@@ -968,7 +968,7 @@ function closeTrade() {
   tradeDraft = null;
 }
 
-const TRADE_ARROW = `<img class="trade-arrow" src="handshake.png" alt="">`; // a handshake between the halves
+const TRADE_ARROW = `<img class="trade-arrow" src="images/handshake.png" alt="">`; // a handshake between the halves
 
 // One player's half of a trade: their properties as tiles (picked ones ringed) over the cash they put in.
 function tradeSide(who, key, side, editable) {

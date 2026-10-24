@@ -8,7 +8,7 @@
   --money: #9be89b; --build: #1a7f37; --hotel: #c53030; --chance: #ee8a43; --chest: #4482c6;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font: 14px/1.4 Georgia, "Times New Roman", serif; background: var(--bg) url("dark-wood-darker.webp") center / cover fixed; color: var(--fg); }
+body { margin: 0; font: 14px/1.4 Georgia, "Times New Roman", serif; background: var(--bg) url("images/dark-wood-darker.webp") center / cover fixed; color: var(--fg); }
 /* Firelight from an unseen fireplace off the top right corner, behind everything */
 #hearth { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
 #hearth .glow { position: absolute; top: -18vmax; right: -18vmax; width: 45vmax; height: 45vmax; border-radius: 50%;
@@ -228,7 +228,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #money .party .cash { flex: none; margin-left: .2em; }
 #money .track { position: relative; width: calc(var(--amt-w) * 2 + 6em); height: 1.6em; }
 #money .track i { position: absolute; left: var(--amt-w); right: var(--amt-w); top: 50%; aspect-ratio: 600 / 59; transform: translateY(-50%) scaleX(-1); opacity: .5; background: var(--fg);
-  -webkit-mask: url(arrow.png) center / contain no-repeat; mask: url(arrow.png) center / contain no-repeat; } /* inset by the amount's width so it fits either side; the art points left, so mirrored */
+  -webkit-mask: url("images/arrow.png") center / contain no-repeat; mask: url("images/arrow.png") center / contain no-repeat; } /* inset by the amount's width so it fits either side; the art points left, so mirrored */
 #money .rtl .track i { transform: translateY(-50%); } /* points at the receiver */
 #money .amt { position: absolute; top: 0; padding: 0 .3em; font-weight: 800; font-size: 1.15em; line-height: 1.4; white-space: nowrap; }
 #money .money { color: var(--money); } /* the light green, now that the box is dark */
@@ -270,7 +270,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #auction-bid { flex: 1 1 240px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
 /* the gavel is a black silhouette, so it's used as a mask and tinted to match the label */
 #auction-bid .gavel { align-self: center; width: 96px; aspect-ratio: 591 / 351; margin-bottom: 8px; background: var(--warn);
-  -webkit-mask: url("gavel.png") center / contain no-repeat; mask: url("gavel.png") center / contain no-repeat; }
+  -webkit-mask: url("images/gavel.png") center / contain no-repeat; mask: url("images/gavel.png") center / contain no-repeat; }
 #auction.done .gavel { background: var(--money); }
 #auction-info .label { color: var(--warn); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
 #auction.done .card { border-color: var(--money); }
