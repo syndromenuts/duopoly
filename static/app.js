@@ -616,33 +616,37 @@ function renderProp() {
   modal.hidden = false;
   const pos = openProp, sp = space(pos), owner = ownerOf(pos), h = housesOn(pos);
   let html = `<div class="prop-head" style="background:${BOARD.colors[sp.group] || "#555"}">${esc(sp.name)}</div>`;
+  if (sp.price) html += owner ? `<div class="hint">Mortgage value</div><div class="price mortgage">$${sp.price / 2}</div>` : `<div class="price">$${sp.price}</div>`;
   if (sp.type === "property" || sp.type === "station") {
     html += rentTable(sp, owner ? h : -1);
   } else if (sp.type === "utility") {
-    html += `<p>Rent is 4× the dice roll if one utility is owned, 10× if both are owned.</p>`;
+    html += `<div class="hint">Rent 4× the dice, 10× with both utilities</div>`;
   } else {
-    html += `<p>${{ go: "Collect $200 salary as you pass.", jail: "Just visiting, or in Jail.", parking: S.rules.free_parking ? `Collect the pot ($${S.pot}).` : "Nothing happens here.",
-      gotojail: "Go directly to Jail.", chance: "Draw a Chance card.", chest: "Draw a Community Chest card.", tax: `Pay $${sp.amount}.` }[sp.type] || ""}</p>`;
+    html += `<div class="hint">${{ go: "Collect $200 salary as you pass.", jail: "Just visiting, or in Jail.", parking: S.rules.free_parking ? `Collect the pot ($${S.pot}).` : "Nothing happens here.",
+      gotojail: "Go directly to Jail.", chance: "Draw a Chance card.", chest: "Draw a Community Chest card.", tax: `Pay $${sp.amount}.` }[sp.type] || ""}</div>`;
   }
+  let acts = "";
   if (sp.price) {
     const mv = sp.price / 2, fee = Math.ceil(mv / 10);
-    html += `<div>Price $${sp.price} · Mortgage value $${mv}</div>`;
-    html += `<div>Owner: ${owner ? pname(owner) : "none (bank)"}${isMortgaged(pos) ? " · <b>MORTGAGED</b>" : ""}${h ? ` · ${h === 5 ? "hotel" : h + " house(s)"}` : ""}</div>`;
+    const status = [isMortgaged(pos) && "<b>MORTGAGED</b>", h && (h === 5 ? "hotel" : h + " house(s)")].filter(Boolean);
+    if (!owner) html += `<div class="hint">Owner: none (bank)</div>`;
+    else if (status.length) html += `<div class="hint">${status.join(" · ")}</div>`;
+    html += `<div class="hint">${owner ? `Price $${sp.price}` : `Mortgage value <span class="mortgage">$${mv}</span>`}</div>`;
     const m = me();
     if (owner === myId && S.phase === "playing" && !m.bankrupt) {
-      html += `<div style="margin-top:8px">`;
       if (sp.type === "property") {
-        if (h < 5) html += btn(m.pending_build ? `Place auctioned ${m.pending_build}` : `Build ${h === 4 ? "hotel" : "house"} ($${sp.house_cost})`, "build", { pos });
-        if (h) html += btn(`Sell ${h === 5 ? "hotel" : "house"} (+$${sp.house_cost / 2})`, "sell_building", { pos }, "secondary");
-        if (groupHasBuildings(pos)) html += btn("Sell all in group", "sell_all", { pos }, "secondary");
+        if (h < 5) acts += btn(m.pending_build ? `Place auctioned ${m.pending_build}` : `Build ${h === 4 ? "hotel" : "house"} ($${sp.house_cost})`, "build", { pos }, "go");
+        if (h) acts += btn(`Sell ${h === 5 ? "hotel" : "house"} (+$${sp.house_cost / 2})`, "sell_building", { pos }, "secondary");
+        if (groupHasBuildings(pos)) acts += btn("Sell all in group", "sell_all", { pos }, "secondary");
       }
       if (isMortgaged(pos)) {
-        if (!m.pending_mortgages.includes(pos)) html += btn(`Pay off mortgage ($${mv + fee})`, "unmortgage", { pos });
-      } else html += btn(`Mortgage (+$${mv})`, "mortgage", { pos }, "secondary");
-      html += `</div><div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;
+        if (!m.pending_mortgages.includes(pos)) acts += btn(`Pay off mortgage ($${mv + fee})`, "unmortgage", { pos });
+      } else acts += btn(`Mortgage (+$${mv})`, "mortgage", { pos }, "secondary");
+      html += `<div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;
     }
   }
-  html += `<div style="margin-top:8px"><button class="secondary" onclick="openProp=null;renderProp()">Close</button></div>`;
+  acts += `<button class="secondary" onclick="openProp=null;renderProp()">Close</button>`;
+  html += `<div class="acts">${acts}</div>`;
   $("prop-body").innerHTML = html;
 }
 
