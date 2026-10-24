@@ -770,7 +770,7 @@ function closeTrade() {
   tradeDraft = null;
 }
 
-const TRADE_ARROW = `<svg class="trade-arrow" viewBox="0 0 48 24" aria-hidden="true"><path d="M3 12h42M11 4l-8 8 8 8M37 4l8 8-8 8"/></svg>`;
+const TRADE_ARROW = `<div class="trade-arrow" aria-hidden="true"><i></i><i class="r"></i></div>`; // arrow.png both ways, the lower one mirrored
 
 // One player's half of a trade: their properties as tiles (picked ones ringed) over the cash they put in.
 function tradeSide(who, key, side, editable) {
@@ -797,12 +797,12 @@ function tradeSide(who, key, side, editable) {
   return html + `</div>`;
 }
 
-// Two halves with a double arrow between; each half is [player id, draft key, side].
+// Two halves with a pair of opposing arrows between; each half is [player id, draft key, side].
 const tradeView = (left, right, editable) =>
   `<div class="trade-view${editable ? "" : " ro"}">${tradeSide(...left, editable)}${TRADE_ARROW}${tradeSide(...right, editable)}</div>`;
 
 function renderTradeForm() {
-  $("trade-title").innerHTML = `Trade with ${pname(tradeDraft.to)}`;
+  $("trade-title").textContent = "Trade";
   const view = $("trade-view");
   view.innerHTML = tradeView([myId, "give", tradeDraft.give], [tradeDraft.to, "get", tradeDraft.get], true);
   view.querySelectorAll("[data-pos]").forEach((b) => {

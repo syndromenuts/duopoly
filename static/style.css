@@ -240,7 +240,9 @@ table.rent td.note { text-align: left; white-space: nowrap; }
 table.rent tr.cur td { background: #3b3518; font-weight: 700; }
 .trade-view { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; text-align: left; }
 .trade-side { display: flex; flex-direction: column; min-width: 0; background: var(--raised); border-radius: var(--radius); padding: 10px; }
-.trade-arrow { align-self: center; width: 72px; fill: none; stroke: var(--warn); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.trade-arrow { align-self: center; width: 96px; display: flex; flex-direction: column; gap: 6px; }
+.trade-arrow i { display: block; aspect-ratio: 600 / 59; background: var(--warn); -webkit-mask: url(arrow.png) center / contain no-repeat; mask: url(arrow.png) center / contain no-repeat; } /* tinted, since the art itself is near-black */
+.trade-arrow i.r { transform: scaleX(-1); }
 .trade-props { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
 /* a property in a trade: a little title deed, ringed once picked */
 .tprop { position: relative; display: flex; flex-direction: column; margin: 0; padding: 0; overflow: hidden; background: var(--cell); color: var(--cell-fg);
@@ -261,7 +263,7 @@ button.tprop:hover:not(:disabled) { border-color: var(--accent); }
 .trade-view.ro input[type=number]::-webkit-inner-spin-button, .trade-view.ro input[type=number]::-webkit-outer-spin-button { appearance: none; margin: 0; }
 @media (max-width: 640px) {
   .trade-view { grid-template-columns: 1fr; }
-  .trade-arrow { justify-self: center; width: 48px; transform: rotate(90deg); }
+  .trade-arrow { justify-self: center; width: 72px; transform: rotate(90deg); margin: 30px 0; } /* margin makes room for the rotated width */
 }
 
 #toast { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: var(--danger); color: #fff; padding: 8px 14px; border-radius: var(--radius); z-index: 20; max-width: 90vw; }
