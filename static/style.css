@@ -55,6 +55,8 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #game-acts .row { display: flex; align-items: center; justify-content: flex-end; }
 #game-acts button.small { padding: 3px 8px; font-size: 13px; }
 #game-acts:not(:empty) { margin-bottom: 8px; }
+#trade-act h3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#trade-act .handshake { height: 1.6em; aspect-ratio: 600 / 172; object-fit: cover; } /* cropped to the art's middle band */
 #trade-act li { margin: 4px 0; }
 #trade-act li:last-child { margin-bottom: 0; }
 #trade-act button { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0; padding: 6px 10px; text-align: left; }
@@ -305,9 +307,7 @@ table.rent td.note { text-align: left; white-space: nowrap; }
 table.rent tr.cur td { background: #3b3518; font-weight: 700; }
 .trade-view { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; text-align: left; }
 .trade-side { display: flex; flex-direction: column; min-width: 0; background: var(--raised); border-radius: var(--radius); padding: 10px; }
-.trade-arrow { align-self: center; width: 96px; display: flex; flex-direction: column; gap: 6px; }
-.trade-arrow i { display: block; aspect-ratio: 600 / 59; background: var(--warn); -webkit-mask: url(arrow.png) center / contain no-repeat; mask: url(arrow.png) center / contain no-repeat; } /* tinted, since the art itself is near-black */
-.trade-arrow i.r { transform: scaleX(-1); }
+.trade-arrow { align-self: center; width: 110px; aspect-ratio: 600 / 172; object-fit: cover; } /* cropped to the art, which fills only the middle band of its square image */
 .trade-props { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
 .trade-view .trade-props { grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 5px; } /* smaller tiles in a trade, more to a row */
 .trade-view .tprop { font-size: 9.5px; }
@@ -349,7 +349,7 @@ button.tprop:hover:not(:disabled) { border-color: var(--accent); }
 .trade-view.ro input[type=number]::-webkit-inner-spin-button, .trade-view.ro input[type=number]::-webkit-outer-spin-button { appearance: none; margin: 0; }
 @media (max-width: 640px) {
   .trade-view { grid-template-columns: 1fr; }
-  .trade-arrow { justify-self: center; width: 72px; transform: rotate(90deg); margin: 30px 0; } /* margin makes room for the rotated width */
+  .trade-arrow { justify-self: center; width: 90px; }
 }
 
 #toast { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: var(--danger); color: #fff; padding: 8px 14px; border-radius: var(--radius); z-index: 20; max-width: 90vw; }

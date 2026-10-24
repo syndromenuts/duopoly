@@ -612,7 +612,7 @@ function renderMe() {
   const others = S.order.map(player).filter((p) => p.id !== myId && !p.bankrupt);
   const locked = !!S.auction || !!S.trades.length;
   $("trade-act").innerHTML = S.phase === "playing" && !m.bankrupt && others.length
-    ? `<div class="card"><h3>Propose trade</h3><ul class="plain">` + others.map((p) => `<li><button type="button" class="secondary" data-act="trade_with"
+    ? `<div class="card"><h3>Propose trade<img class="handshake" src="handshake.png" alt=""></h3><ul class="plain">` + others.map((p) => `<li><button type="button" class="secondary" data-act="trade_with"
         data-arg='${JSON.stringify({ id: p.id })}'${locked ? " disabled" : ""}><span class="dot" style="background:${p.color}"></span><span class="nm">${esc(p.name)}</span><span>$${p.cash}</span></button></li>`).join("") + `</ul></div>`
     : "";
 }
@@ -968,7 +968,7 @@ function closeTrade() {
   tradeDraft = null;
 }
 
-const TRADE_ARROW = `<div class="trade-arrow" aria-hidden="true"><i></i><i class="r"></i></div>`; // arrow.png both ways, the lower one mirrored
+const TRADE_ARROW = `<img class="trade-arrow" src="handshake.png" alt="">`; // a handshake between the halves
 
 // One player's half of a trade: their properties as tiles (picked ones ringed) over the cash they put in.
 function tradeSide(who, key, side, editable) {
@@ -995,7 +995,7 @@ function tradeSide(who, key, side, editable) {
   return html + `</div>`;
 }
 
-// Two halves with a pair of opposing arrows between; each half is [player id, draft key, side].
+// Two halves with a handshake between; each half is [player id, draft key, side].
 const tradeView = (left, right, editable) =>
   `<div class="trade-view${editable ? "" : " ro"}">${tradeSide(...left, editable)}${TRADE_ARROW}${tradeSide(...right, editable)}</div>`;
 
