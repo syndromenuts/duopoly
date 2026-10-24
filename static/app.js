@@ -22,6 +22,7 @@ let moving = null; // id of the player whose token is animating along the board
 let animating = false; // a roll is still playing out (token or card), so the rest of the state waits
 let shownCenter = null; // markup last put in the center info
 let revealed = null; // ids of drawn cards that have reached their deck (null until the first state)
+let flowsShown = null; // ids of cash movements already shown in the middle of the board
 
 // ------------------------------------------------------------------ server
 
@@ -53,6 +54,7 @@ function connect() {
     const next = JSON.parse(e.data);
     receivedAt = Date.now();
     if (!revealed) revealed = new Set(next.drawn.map((c) => c.id)); // cards drawn before we connected skip the show
+    if (!flowsShown) flowsShown = new Set(next.flows.map((f) => f.id)); // so do payments
     const fresh = seenRoll !== null && next.roll_id !== seenRoll && next.dice && next.phase !== "lobby";
     seenRoll = next.roll_id;
     if (fresh) {
@@ -62,12 +64,13 @@ function connect() {
       held = next;
       S = { ...before, dice: next.dice, doubles: next.doubles, roll_id: next.roll_id, moves: next.moves, drawn: next.drawn };
       animateDice();
-      animateMoves(next.moves || [], next.drawn.filter((c) => !revealed.has(c.id)));
+      animateMoves(next.moves || [], next.drawn.filter((c) => !revealed.has(c.id)), next.flows.filter((f) => !flowsShown.has(f.id)));
       if (animating) render(); // otherwise it was skipped and finishRoll already rendered
     } else if (animating) held = next;
     else {
       S = next;
       render();
+      showFlows();
     }
   };
 }
@@ -325,31 +328,42 @@ function renderDecks() {
   }
 }
 
-// Transform that puts the flyer over a deck, or enlarged in the middle of the board.
-function flyerSpot(deck) {
+// Transform that puts the flyer over a deck, or enlarged in the middle of the board
+// (raised, when it pays out, to make room for the money box below it).
+function flyerSpot(deck, raised = false) {
   const board = $("board"), fly = $("flyer");
   if (!deck) {
-    const k = 2.2;
-    return `translate(${(board.clientWidth - fly.offsetWidth * k) / 2}px, ${(board.clientHeight - fly.offsetHeight * k) / 2}px) scale(${k})`;
+    const k = 2.2, lift = raised ? board.clientHeight * 0.11 : 0;
+    return `translate(${(board.clientWidth - fly.offsetWidth * k) / 2}px, ${(board.clientHeight - fly.offsetHeight * k) / 2 - lift}px) scale(${k})`;
   }
   const b = board.getBoundingClientRect(), r = $("deck-" + deck).getBoundingClientRect();
   return `translate(${r.left - b.left - board.clientLeft}px, ${r.top - b.top - board.clientTop}px) scale(1)`;
 }
 
 // Draws the card out of its deck into the middle of the board, then (without
-// waiting) sends it back face up onto the deck once it has been read. The
-// return flight is kept in showCard.back so the end of the roll can wait for it.
-async function showCard(c, run) {
+// waiting) sends it back face up onto the deck once it has been read. A card that
+// moves money rises once read, with the payments shown below it. The return
+// flight is kept in showCard.back so the end of the roll can wait for it.
+async function showCard(c, run, flows) {
   const fly = $("flyer");
   fly.className = "face " + c.deck;
   fly.innerHTML = cardHtml(c);
   fly.hidden = false;
   fly.style.transform = flyerSpot();
   fly.animate([{ transform: flyerSpot(c.deck) }, { transform: flyerSpot() }], { duration: 500, easing: CARD_EASE });
-  await new Promise((r) => setTimeout(r, 2800));
+  if (flows.length) {
+    await new Promise((r) => setTimeout(r, 1300));
+    if (run !== animateMoves.run) return;
+    fly.style.transform = flyerSpot(null, true);
+    fly.animate([{ transform: flyerSpot() }, { transform: flyerSpot(null, true) }], { duration: 350, easing: CARD_EASE });
+    await new Promise((r) => setTimeout(r, 350));
+    if (run !== animateMoves.run) return;
+    await payOut(flows, true);
+  } else await new Promise((r) => setTimeout(r, 2800));
   if (run !== animateMoves.run) return;
+  const at = fly.style.transform;
   fly.style.transform = flyerSpot(c.deck);
-  showCard.back = fly.animate([{ transform: flyerSpot() }, { transform: flyerSpot(c.deck) }], { duration: 700, easing: CARD_EASE }).finished.then(() => {
+  showCard.back = fly.animate([{ transform: at }, { transform: flyerSpot(c.deck) }], { duration: 700, easing: CARD_EASE }).finished.then(() => {
     fly.hidden = true;
     revealed.add(c.id);
     if (S) renderDecks();
@@ -414,7 +428,7 @@ function cellCenter(pos, jailed = false) {
 // Replays the server's move list with a floating token: hop space by space for
 // walks, fly in an arc for jumps (e.g. to Jail). Cards drawn on the way are
 // shown as the token lands on each Chance / Community Chest space.
-async function animateMoves(moves, cards = []) {
+async function animateMoves(moves, cards = [], flows = []) {
   const run = (animateMoves.run = {}); // a newer roll cancels this one
   animating = true;
   showCard.back = null;
@@ -455,10 +469,13 @@ async function animateMoves(moves, cards = []) {
       const ms = Math.max(45, 200 * 0.88 ** i); // each hop quicker than the last
       await hop(cellCenter(at), cellCenter(next), ms, $("cell-" + at).offsetHeight * 0.35);
       at = next;
-      if (at === 0 && dir === 1) await collectGo(pid, i === steps - 1);
+      if (at === 0 && dir === 1) await collectGo(pid, flows);
     }
     await new Promise((r) => setTimeout(r, 300)); // pause on each landing
-    if (pending[0]?.deck === space(m.to).type) await showCard(pending.shift(), run);
+    if (pending[0]?.deck === space(m.to).type) {
+      const c = pending.shift();
+      await showCard(c, run, flows.filter((f) => f.card === c.id));
+    }
   }
   if (run !== animateMoves.run) return;
   for (const c of pending) revealed.add(c.id); // drawn without a matching landing
@@ -467,12 +484,31 @@ async function animateMoves(moves, cards = []) {
 }
 
 // Stops on GO to pay the salary on screen, and stays until the change has counted in and faded,
-// so it shows apart from whatever the move costs after.
-async function collectGo(pid, landed) {
-  const pay = landed && S.rules.double_go ? 400 : 200;
-  S = { ...S, players: S.players.map((p) => (p.id === pid ? { ...p, cash: p.cash + pay } : p)) };
-  render();
+// so it shows apart from whatever the move costs after. It shows on the side only, not in the middle.
+async function collectGo(pid, flows) {
+  const f = flows.find((f) => f.go && f.to === pid && !flowsShown.has(f.id));
+  if (!f) return;
+  flowsShown.add(f.id);
+  applyFlows([f]);
   await new Promise((r) => setTimeout(r, HOLD_MS + TALLY_MS + FADE_MS));
+}
+
+// Shows payments made partway through a roll in the middle of the board.
+function payOut(flows, belowCard = false) {
+  applyFlows(flows);
+  return showMoney(flows, belowCard);
+}
+
+// Puts payments made partway through a roll in the cash on screen ahead of the
+// rest of the state, which already includes them.
+function applyFlows(flows) {
+  const cash = {};
+  for (const f of flows) {
+    cash[f.from] = (cash[f.from] || 0) - f.amount;
+    cash[f.to] = (cash[f.to] || 0) + f.amount;
+  }
+  S = { ...S, players: S.players.map((p) => (cash[p.id] ? { ...p, cash: p.cash + cash[p.id] } : p)) };
+  render();
 }
 
 // Drops the token and catches the screen up with the state held during the roll.
@@ -482,6 +518,7 @@ function finishRoll() {
   $("mover").hidden = true;
   if (held) [S, held] = [held, null];
   render();
+  showFlows();
 }
 
 function waitingReason() {
@@ -883,6 +920,75 @@ function tallyFrame(now) {
     });
   }
   if (tallying) requestAnimationFrame(tallyFrame);
+}
+
+// ------------------------------------------------------------------ payments
+
+// Every payment shows in the middle of the board for everyone: a row per payment
+// with the amount travelling from giver to receiver, the player whose turn it is
+// on the left. It lands as the cash on the side starts to run, and a newer
+// payment cuts it short. A payment to or from the bank shows just the player and
+// the change, counting down to nothing with the cash on the side. Resolves when it starts to fade.
+function showMoney(flows, belowCard = false) {
+  flows.forEach((f) => flowsShown.add(f.id));
+  if (!flows.length || document.hidden) return Promise.resolve();
+  const box = $("money"), run = (showMoney.run = {});
+  const party = (id) => {
+    if (id === "pot") return `<div class="party"><b>Free Parking</b></div>`;
+    if (!id) return `<div class="party"><b>Bank</b></div>`;
+    const p = player(id);
+    // Their cash runs with the same tally as on the side, which writes into every data-cash span.
+    const cash = p ? `<span class="money cash" data-cash="${id}">$${tallies[id]?.shown ?? p.cash}</span>` : "";
+    return `<div class="party"><span class="dot" style="background:${p?.color || "#888"}"></span><b>${esc(p?.name ?? "?")}</b>${cash}</div>`;
+  };
+  const isPlayer = (id) => id && id !== "pot";
+  const rows = flows.map((f) => {
+    if (!isPlayer(f.from) || !isPlayer(f.to)) {
+      const up = isPlayer(f.to);
+      return `<div class="flow">${party(up ? f.to : f.from)}<span class="money change ${up ? "up" : "down"}" data-amount="${f.amount}">${up ? "+" : "-"}$${f.amount}</span></div>`;
+    }
+    // The player on turn goes left; otherwise a player beats the bank, and the giver beats the receiver.
+    const flip = f.to === S.turn || (f.from !== S.turn && !isPlayer(f.from) && isPlayer(f.to));
+    const [l, r] = flip ? [f.to, f.from] : [f.from, f.to];
+    return `<div class="flow${flip ? " rtl" : ""}">${party(l)}<div class="track"><i></i><span class="amt money">$${f.amount}</span></div>${party(r)}</div>`;
+  });
+  box.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+  box.innerHTML = rows.join("");
+  box.classList.toggle("below-card", belowCard);
+  box.hidden = false;
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+  // The arrows leave room for the widest amount at either end, so it starts before them and ends past them.
+  box.style.setProperty("--amt-w", Math.max(0, ...[...box.querySelectorAll(".amt")].map((a) => a.offsetWidth)) + "px");
+  const changes = [...box.querySelectorAll(".change")], start = performance.now();
+  const count = (now) => {
+    if (run !== showMoney.run) return;
+    const k = Math.min(1, Math.max(0, now - start - HOLD_MS) / TALLY_MS);
+    for (const el of changes) el.textContent = `${el.classList.contains("up") ? "+" : "-"}$${Math.round(el.dataset.amount * (1 - k) ** 3)}`; // eased like the side
+    if (k < 1) requestAnimationFrame(count);
+  };
+  if (changes.length) requestAnimationFrame(count);
+  box.querySelectorAll(".amt").forEach((amt) => {
+    const rtl = amt.closest(".flow").classList.contains("rtl");
+    const [a, b] = rtl ? [{ left: "100%", transform: "translateX(-100%)" }, { left: "0%", transform: "translateX(0)" }]
+      : [{ left: "0%", transform: "translateX(0)" }, { left: "100%", transform: "translateX(-100%)" }];
+    Object.assign(amt.style, b);
+    if (!still) amt.animate([a, a, b], { duration: HOLD_MS, easing: CARD_EASE, fill: "backwards" }); // waits a beat, then crosses
+  });
+  return new Promise((resolve) => setTimeout(() => {
+    resolve();
+    if (run !== showMoney.run) return;
+    box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE_MS }).finished.then(() => {
+      if (run === showMoney.run) box.hidden = true;
+    }, () => {});
+  }, HOLD_MS + TALLY_MS));
+}
+
+// Shows the payments in the state on screen that have not been shown yet.
+function showFlows() {
+  const fresh = S.flows.filter((f) => !flowsShown.has(f.id));
+  fresh.forEach((f) => f.go && flowsShown.add(f.id)); // GO salary shows on the side only
+  if (S.phase !== "lobby") showMoney(fresh.filter((f) => !f.go));
 }
 
 // ------------------------------------------------------------------ money

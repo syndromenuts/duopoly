@@ -192,6 +192,25 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .steady > span { grid-area: 1 / 1; }
 .steady > span + span { visibility: hidden; }
 #flyer { inset: auto; left: 0; top: 0; z-index: 8; pointer-events: none; transform-origin: 0 0; width: calc(var(--B) * .25); height: calc(var(--B) * .15); }
+#money { position: absolute; left: 0; right: 0; top: 50%; z-index: 7; width: fit-content; margin: 0 auto; transform: translateY(-50%); max-width: calc(var(--B) * .7); pointer-events: none; /* centered by the auto margins, sized to its rows */
+  display: grid; grid-template-columns: minmax(0, max-content) auto minmax(0, max-content); align-items: center; gap: .5em .8em; padding: .7em .9em; border-radius: calc(var(--B) * .012); background: var(--card); color: var(--fg);
+  box-shadow: 0 4px 14px rgba(0,0,0,.55); font-size: clamp(11px, 1.9vw, 18px); }
+#money[hidden] { display: none; }
+#money.below-card { top: 61%; transform: none; } /* under the raised card */
+#money .flow { display: contents; } /* its cells join the box's grid, so every row shares the name columns, each as wide as its longest name */
+#money .party { display: flex; align-items: center; gap: .35em; min-width: 0; }
+#money .party:last-child { justify-content: flex-end; }
+#money .party b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#money .party .dot { flex: none; width: 1em; height: 1em; }
+#money .party .cash { flex: none; margin-left: .2em; }
+#money .track { position: relative; width: calc(var(--amt-w) * 2 + 6em); height: 1.6em; }
+#money .track i { position: absolute; left: var(--amt-w); right: var(--amt-w); top: 50%; aspect-ratio: 600 / 59; transform: translateY(-50%) scaleX(-1); opacity: .5; background: var(--fg);
+  -webkit-mask: url(arrow.png) center / contain no-repeat; mask: url(arrow.png) center / contain no-repeat; } /* inset by the amount's width so it fits either side; the art points left, so mirrored */
+#money .rtl .track i { transform: translateY(-50%); } /* points at the receiver */
+#money .amt { position: absolute; top: 0; padding: 0 .3em; font-weight: 800; font-size: 1.15em; line-height: 1.4; white-space: nowrap; }
+#money .money { color: var(--money); } /* the light green, now that the box is dark */
+#money .change { grid-column: 2 / -1; font-weight: 800; font-size: 1.4em; line-height: 1; } /* no arrow or bank, so it takes the rest of the row */
+#money .change.down { color: var(--danger); }
 
 #me .me-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; } /* cash in the top right corner */
 #me .cash { font-size: 22px; font-weight: 700; line-height: 1; white-space: nowrap; }

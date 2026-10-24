@@ -443,6 +443,19 @@ class Cards(unittest.TestCase):
         act(g, a, "end_turn")
         self.assertEqual(g.drawn, [])
 
+    def test_card_payments_are_recorded_with_the_card(self):
+        g, (a, b, c) = new_game()
+        idx = next(i for i, (_, eff) in enumerate(DECKS["chest"]) if eff[0] == "collect_each")
+        self.draw(g, a, "chest", idx)
+        card = g.drawn[-1]["id"]
+        self.assertEqual([(f["from"], f["to"], f["card"]) for f in g.flows], [(b.id, a.id, card), (c.id, a.id, card)])
+        a.pos = 38
+        act(g, a, "end_turn")
+        g.turn = 0
+        roll(g, a, 1, 2)  # passes GO, lands on Mediterranean: a later payment, not the card's
+        go = g.flows[-1]
+        self.assertEqual((go["from"], go["to"], go["amount"], go["go"], go["card"]), (None, a.id, 200, True, None))
+
     def test_repairs(self):
         g, (a, b, c) = new_game()
         give(g, a, 1, 3)

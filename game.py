@@ -74,6 +74,9 @@ class Game:
         self.roll_id = 0  # bumps on every turn roll so clients can animate repeats
         self.moves = []  # token movements since the last roll, for client animation
         self.card_id = 0  # unique id per drawn card so clients animate each draw once
+        self.flows = []  # recent cash movements, for the client's money animation
+        self.flow_id = 0
+        self.card_ctx = None  # id of the card whose effect is being paid out, if any
         self.reset_board()
 
     # ------------------------------------------------------------------ setup
@@ -148,6 +151,14 @@ class Game:
 
     # ----------------------------------------------------------------- money
 
+    def flow(self, src, dst, amount, go=False):
+        """Record amount moving from src to dst: a player id, None for the bank, or "pot" for Free Parking."""
+        if amount <= 0:
+            return
+        self.flow_id += 1
+        self.flows.append({"id": self.flow_id, "from": src, "to": dst, "amount": amount, "card": self.card_ctx, "go": go})
+        del self.flows[:-30]
+
     def charge(self, pid, amount, creditor=None, pot=False, reason=""):
         """Make pid pay amount to creditor (player id) or the bank. Becomes a debt if unaffordable."""
         if amount <= 0:
@@ -164,6 +175,7 @@ class Game:
     def pay(self, debt):
         p = self.players[debt["debtor"]]
         p.cash -= debt["amount"]
+        self.flow(p.id, debt["creditor"] or ("pot" if debt["pot"] else None), debt["amount"])
         if debt["creditor"]:
             self.players[debt["creditor"]].cash += debt["amount"]
         elif debt["pot"]:
@@ -187,6 +199,7 @@ class Game:
     def salary(self, p, landed):
         amount = 400 if landed and self.rules["double_go"] else 200
         p.cash += amount
+        self.flow(None, p.id, amount, go=True)
         self.say(f"{p.name} collected ${amount} for {'landing on' if landed else 'passing'} GO.")
 
     def relocate(self, p, target, how):
@@ -240,6 +253,7 @@ class Game:
         elif t == "parking" and self.rules["free_parking"] and self.pot:
             self.say(f"{p.name} collected the Free Parking pot of ${self.pot}.")
             p.cash += self.pot
+            self.flow("pot", p.id, self.pot)
             self.pot = 0
         self.finish_landing()
 
@@ -290,11 +304,13 @@ class Game:
         if op == "back":
             self.relocate(p, (p.pos - eff[1]) % 40, "back")
             return self.land(p, sum(self.dice))
+        self.card_ctx = self.card_id  # what is paid from here on is the card's own doing
         if op == "jail":
             self.send_to_jail(p)
         elif op == "money":
             if eff[1] > 0:
                 p.cash += eff[1]
+                self.flow(None, p.id, eff[1])
             else:
                 self.charge(p.id, -eff[1], None, pot=True, reason="card")
         elif op == "repairs":
@@ -307,6 +323,7 @@ class Game:
         elif op == "collect_each":
             for o in others:
                 self.charge(o.id, eff[1], p.id, reason="birthday")
+        self.card_ctx = None
         self.finish_landing()
 
     # ------------------------------------------------------------ turn flow
@@ -388,6 +405,7 @@ class Game:
         if p.cash < sp["price"]:
             raise GameError("Not enough cash. Mortgage or sell to raise funds, or decline.")
         p.cash -= sp["price"]
+        self.flow(p.id, None, sp["price"])
         self.owners[p.pos] = p.id
         self.say(f"{p.name} bought {sp['name']} for ${sp['price']}.")
         self.finish_landing()
@@ -456,6 +474,7 @@ class Game:
         if a["bidder"]:
             w = self.players[a["bidder"]]
             w.cash -= a["high"]
+            self.flow(w.id, None, a["high"])
             if a["kind"] == "property":
                 self.owners[a["pos"]] = w.id
             else:
@@ -537,6 +556,7 @@ class Game:
             self.start_auction(kind, opener=p.id, opening=cost, bidders=wanting)
             return
         p.cash -= cost
+        self.flow(p.id, None, cost)
         self.place(pos, kind)
         self.say(f"{p.name} built a {kind} on {name}.")
 
@@ -560,6 +580,7 @@ class Game:
             self.bank_houses += 1
         refund = SPACES[pos]["house_cost"] // 2
         p.cash += refund
+        self.flow(None, p.id, refund)
         self.say(f"{p.name} sold a building on {SPACES[pos]['name']} for ${refund}.")
 
     def sell_group(self, pos):
@@ -583,6 +604,7 @@ class Game:
         if not refund:
             raise GameError("No buildings in that group.")
         p.cash += refund
+        self.flow(None, p.id, refund)
         self.say(f"{p.name} sold all buildings in the {SPACES[pos]['group']} group for ${refund}.")
 
     # ------------------------------------------------------------- mortgages
@@ -596,6 +618,7 @@ class Game:
             raise GameError("Sell all buildings in this color group first.")
         self.mortgaged.add(pos)
         p.cash += mortgage_value(pos)
+        self.flow(None, p.id, mortgage_value(pos))
         self.say(f"{p.name} mortgaged {SPACES[pos]['name']} for ${mortgage_value(pos)}.")
 
     def a_unmortgage(self, p, data):
@@ -607,6 +630,7 @@ class Game:
         if p.cash < cost:
             raise GameError(f"You need ${cost}.")
         p.cash -= cost
+        self.flow(p.id, None, cost)
         self.mortgaged.discard(pos)
         self.say(f"{p.name} paid off the mortgage on {SPACES[pos]['name']} for ${cost}.")
 
@@ -622,6 +646,7 @@ class Game:
             if p.cash < cost:
                 raise GameError(f"You need ${cost} to pay it off now.")
             p.cash -= cost
+            self.flow(p.id, None, cost)
             self.mortgaged.discard(pos)
             self.say(f"{p.name} paid off the mortgage on {name} for ${cost}.")
             p.pending_mortgages.remove(pos)
@@ -696,6 +721,7 @@ class Game:
     def transfer_side(self, src, dst, side):
         src.cash -= side["cash"]
         dst.cash += side["cash"]
+        self.flow(src.id, dst.id, side["cash"])
         for pos in side["props"]:
             self.owners[pos] = dst.id
             if pos in src.pending_mortgages:
@@ -740,6 +766,7 @@ class Game:
             if self.houses.get(pos):
                 refund += self.sell_group(pos)
         props = sorted(self.owned_by(p.id))
+        self.flow(p.id, creditor.id if creditor else None, p.cash + refund if creditor else p.cash)
         if creditor:
             creditor.cash += p.cash + refund
             for pos in props:
@@ -918,5 +945,6 @@ class Game:
             "bank_houses": self.bank_houses, "bank_hotels": self.bank_hotels, "pot": self.pot,
             "debts": self.debts, "auction": self.auction, "auction_queue": self.auction_queue,
             "trades": list(self.trades.values()), "winner": self.winner, "drawn": self.drawn,
+            "flows": self.flows,
             "log": self.log[-60:], "colors": TOKEN_COLORS, "dev": self.dev,
         }
