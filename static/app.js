@@ -1217,7 +1217,7 @@ function ember() {
   const e = document.createElement("div");
   e.className = "ember";
   $("hearth").append(e);
-  const dx = 120 + Math.random() * 260, dy = 60 + Math.random() * 220, sway = 15 + Math.random() * 25;
+  const dx = 70 + Math.random() * 140, dy = 40 + Math.random() * 110, sway = 10 + Math.random() * 15;
   const frames = [0, .25, .5, .75, 1].map((t) => ({
     transform: `translate(${-dx * t}px, ${dy * t + Math.sin(t * 9) * sway * t}px) scale(${1 - t * .6})`,
     opacity: t === 0 ? 0 : t === 1 ? 0 : 1 - t * .7,

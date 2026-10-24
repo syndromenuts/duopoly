@@ -11,10 +11,10 @@
 body { margin: 0; font: 14px/1.4 Georgia, "Times New Roman", serif; background: var(--bg) url("dark-wood-darker.webp") center / cover fixed; color: var(--fg); }
 /* Firelight from an unseen fireplace off the top right corner, behind everything */
 #hearth { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
-#hearth .glow { position: absolute; top: -30vmax; right: -30vmax; width: 75vmax; height: 75vmax; border-radius: 50%;
+#hearth .glow { position: absolute; top: -18vmax; right: -18vmax; width: 45vmax; height: 45vmax; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(255,80,30,.09), rgba(230,40,15,.04) 45%, transparent);
   animation: flicker 4.3s infinite; }
-#hearth .glow + .glow { width: 55vmax; height: 55vmax; top: -22vmax; right: -22vmax; background: radial-gradient(closest-side, rgba(255,110,40,.07), transparent); animation-duration: 2.9s; animation-direction: reverse; }
+#hearth .glow + .glow { width: 32vmax; height: 32vmax; top: -13vmax; right: -13vmax; background: radial-gradient(closest-side, rgba(255,110,40,.07), transparent); animation-duration: 2.9s; animation-direction: reverse; }
 @keyframes flicker { 0%, 100% { opacity: .85; } 12% { opacity: 1; } 21% { opacity: .7; } 33% { opacity: .95; } 47% { opacity: .75; } 58% { opacity: 1; } 71% { opacity: .8; } 84% { opacity: .92; } }
 #hearth .ember { position: absolute; top: 0; right: 0; width: 3px; height: 3px; border-radius: 50%; background: #ffb347; box-shadow: 0 0 6px 2px rgba(255,120,30,.6); }
 @media (prefers-reduced-motion: reduce) { #hearth .glow { animation: none; } }
