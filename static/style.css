@@ -181,6 +181,11 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #me .notice.bad, .player-card .notice.bad { background: #3d1c1e; border-left-color: var(--danger); }
 #log { max-height: 220px; overflow-y: auto; font-size: 12px; }
 #log li { padding: 2px 0; border-bottom: 1px solid var(--line-soft); }
+#log-toggle { cursor: pointer; user-select: none; }
+#log-toggle::after { content: ""; display: inline-block; width: .4em; height: .4em; margin-left: .5em; border: solid currentColor; border-width: 0 2px 2px 0; transform: translateY(.1em) rotate(-135deg); }
+#log-card.collapsed #log-toggle::after { transform: translateY(-.15em) rotate(45deg); }
+#log-card.collapsed #log li:not(:first-child) { display: none; }
+#log-card.collapsed #log li { border-bottom: none; }
 #auction { border: 2px solid var(--warn); }
 #auction-controls { margin-top: 6px; }
 

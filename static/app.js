@@ -171,6 +171,12 @@ function bindStatic() {
     if (await send("propose_trade", tradeDraft)) closeTrade();
   };
 
+  // The log starts collapsed to its latest entry; its header toggles the full list.
+  $("log-toggle").onclick = () => $("log-card").classList.toggle("collapsed");
+  $("log-toggle").onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("log-toggle").click(); }
+  };
+
   $("dice").onkeydown = (e) => {
     if ((e.key === "Enter" || e.key === " ") && $("dice").dataset.act) { e.preventDefault(); $("dice").click(); }
   };
