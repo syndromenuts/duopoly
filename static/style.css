@@ -114,7 +114,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .cell .bld { color: var(--build); font-weight: 700; letter-spacing: -1px; line-height: 1; white-space: nowrap;
   text-shadow: -1px 0 #1a1a1a, 1px 0 #1a1a1a, 0 -1px #1a1a1a, 0 1px #1a1a1a; } /* outlined so it shows on any strip colour, green and red included */
 .cell .bld:not(.hotel) { font-size: 1.4em; }
-.cell .bld.hotel { color: var(--hotel); }
+.cell .bld.hotel { width: 50%; height: 65%; box-sizing: border-box; background: var(--hotel); border: 1px solid #1a1a1a; } /* a big red block, drawn rather than spelled out */
 .cell .toks { position: absolute; bottom: 5px; left: 0; right: 0; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 1px; }
 .cell .toks .dot, .cell .inmates .dot { width: clamp(12px, 2vw, 20px); height: clamp(12px, 2vw, 20px); box-sizing: border-box; border: 3px solid #1a1a1a; margin: 0 -2px;
   box-shadow: 0 2px 5px rgba(0,0,0,.55); }

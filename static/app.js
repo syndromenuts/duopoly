@@ -277,7 +277,7 @@ function renderBoard() {
     const here = S.players.filter((p) => !p.bankrupt && p.pos === i && p.id !== moving);
     let html = "";
     // Buildings sit in the colour strip, as on the real board.
-    const bld = h ? `<div class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "HOTEL" : "■".repeat(h)}</div>` : "";
+    const bld = h ? `<div class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "" : "■".repeat(h)}</div>` : "";
     if (sp.type === "property") html += `<div class="strip" style="background:${BOARD.colors[sp.group]}">${bld}</div>`;
     if (sp.type === "jail") {
       // Jailed players sit inside the cell, behind the bars; visitors stay in the L outside the box.
