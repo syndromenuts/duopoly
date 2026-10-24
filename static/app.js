@@ -276,7 +276,9 @@ function renderBoard() {
     const h = housesOn(i);
     const here = S.players.filter((p) => !p.bankrupt && p.pos === i && p.id !== moving);
     let html = "";
-    if (sp.type === "property") html += `<div class="strip" style="background:${BOARD.colors[sp.group]}"></div>`;
+    // Buildings sit in the colour strip, as on the real board.
+    const bld = h ? `<div class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "HOTEL" : "■".repeat(h)}</div>` : "";
+    if (sp.type === "property") html += `<div class="strip" style="background:${BOARD.colors[sp.group]}">${bld}</div>`;
     if (sp.type === "jail") {
       // Jailed players sit inside the cell, behind the bars; visitors stay in the L outside the box.
       html += `<div class="jailbox"><div class="inmates">${inmateDots(here.filter((p) => p.in_jail))}</div>${JAIL_BARS}</div>`;
@@ -286,7 +288,6 @@ function renderBoard() {
     if (sp.type === "go") html += `<svg class="arrow" viewBox="2.5 3 20.5 18"><path d="M21 12H5M12 4.5 4.5 12l7.5 7.5"/></svg>`; // play runs leftward from GO
     if (sp.price) html += `<div class="pr">$${sp.price}</div>`;
     if (sp.type === "tax") html += `<div class="pr">pay $${sp.amount}</div>`;
-    if (h) html += `<div class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "HOTEL" : "■".repeat(h)}</div>`;
     if (i === 20 && S.rules.free_parking) html += `<div class="pr">Pot $${S.pot}</div>`;
     html += `<div class="toks">${here.filter((p) => !p.in_jail).map((p) => `<span class="dot" style="background:${p.color}" title="${esc(p.name)}"></span>`).join("")}</div>`;
     if (owner) html += `<div class="owner" style="background:${player(owner).color}"></div>`;
