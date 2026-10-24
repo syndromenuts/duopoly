@@ -26,6 +26,12 @@ label { display: block; margin: 4px 0; }
 .money { color: var(--money); }
 #center .money, .face .money { color: var(--build); } /* light green would vanish on the pale board and card faces */
 button:not(.secondary) .money { color: inherit; } /* and on the colored buttons */
+.cash-delta { margin-left: .3em; font-size: 2em; font-weight: 700; line-height: 0; vertical-align: -.15em; } /* line-height 0 so it overflows its row rather than growing it */
+.cash-delta.down { color: var(--danger); }
+.cash-delta.up { color: var(--money); }
+/* In the player list it hangs past the right edge of the list. #side, not the clipped list or row, is its
+   containing block, so it escapes their overflow; with top left auto it stays level with its own row. */
+#turns .cash-delta { position: absolute; left: 100%; margin-left: 12px; white-space: nowrap; pointer-events: none; }
 .hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
 .plain { list-style: none; margin: 0; padding: 0; }
 .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; border: 1px solid rgba(255,255,255,.35); }
@@ -69,7 +75,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #turns li.turn .who { font-weight: 700; }
 #turns li.out { opacity: .45; }
 #turns li.out .who { text-decoration: line-through; }
-#side { width: 360px; max-width: 100%; align-self: stretch; display: flex; flex-direction: column; } /* as tall as the board, so the turn list sits level with its bottom */
+#side { position: relative; width: 360px; max-width: 100%; align-self: stretch; display: flex; flex-direction: column; } /* as tall as the board, so the turn list sits level with its bottom */
 .cell { position: relative; border: 1px solid var(--cell-line); background: var(--cell); color: var(--cell-fg); overflow: hidden; display: flex; flex-direction: column;
   align-items: center; justify-content: flex-start; text-align: center; font-size: clamp(7px, 1.05vw, 11px); line-height: 1.1; cursor: pointer; }
 .cell:hover { outline: 2px solid var(--accent); z-index: 2; }

@@ -453,6 +453,7 @@ async function animateMoves(moves, cards = []) {
       const ms = Math.max(45, 200 * 0.88 ** i); // each hop quicker than the last
       await hop(cellCenter(at), cellCenter(next), ms, $("cell-" + at).offsetHeight * 0.35);
       at = next;
+      if (at === 0 && dir === 1) await collectGo(pid, i === steps - 1);
     }
     await new Promise((r) => setTimeout(r, 300)); // pause on each landing
     if (pending[0]?.deck === space(m.to).type) await showCard(pending.shift(), run);
@@ -461,6 +462,14 @@ async function animateMoves(moves, cards = []) {
   for (const c of pending) revealed.add(c.id); // drawn without a matching landing
   await showCard.back; // a card drawn on the last landing may still be flying home
   if (run === animateMoves.run) finishRoll();
+}
+
+// Stops on GO to pay the salary on screen, so it shows apart from whatever the move costs after.
+async function collectGo(pid, landed) {
+  const pay = landed && S.rules.double_go ? 400 : 200;
+  S = { ...S, players: S.players.map((p) => (p.id === pid ? { ...p, cash: p.cash + pay } : p)) };
+  render();
+  await new Promise((r) => setTimeout(r, HOLD_MS));
 }
 
 // Drops the token and catches the screen up with the state held during the roll.
@@ -493,7 +502,7 @@ function renderMe() {
     return;
   }
   let html = `<div><span class="dot" style="background:${m.color}"></span> <b>${esc(m.name)}</b>${m.in_jail ? " · in Jail" : ""}${m.cards ? ` · ${m.cards} Get Out of Jail Free` : ""}</div>`;
-  html += `<div class="cash">$${m.cash}</div>`;
+  html += `<div class="cash">${cashHtml(m)}</div>`;
   html += ownedTiles(m.id);
   if (m.bankrupt) {
     html += `<div class="notice bad">You are bankrupt.</div>`;
@@ -639,7 +648,7 @@ function renderPlayers() {
     return `<li class="${p.id === S.turn ? "turn" : ""} ${p.bankrupt ? "out" : ""}" data-act="view_player" data-arg='${JSON.stringify({ id: p.id })}'
       role="button" tabindex="0" title="Show ${esc(p.name)}'s details">
       <div class="who"><span class="dot" style="background:${p.color}"></span><span class="nm" title="${esc(p.name)}">${esc(p.name)}${p.id === myId ? " (you)" : ""}</span>
-      <span class="st">$${p.cash}${p.in_jail ? " 🔒" : ""}${p.cards ? " 🎫×" + p.cards : ""}${p.connected ? "" : ` <span title="Disconnected">⚠️</span>`} ${kick}</span></div>
+      <span class="st">${cashHtml(p)}${p.in_jail ? " 🔒" : ""}${p.cards ? " 🎫×" + p.cards : ""}${p.connected ? "" : ` <span title="Disconnected">⚠️</span>`} ${kick}</span></div>
       <div class="chips">${chips(ownedBy(p.id))}</div></li>`;
   }).join("");
 }
@@ -663,7 +672,7 @@ function renderPlayerDetail() {
   const stat = (label, value) => `<div class="pstat"><div class="hint">${label}</div><div>${value}</div></div>`;
   let html = `<h2><span class="dot" style="background:${p.color}"></span> ${esc(p.name)}${p.id === myId ? " (you)" : ""}</h2>
     <div class="hint">${status}${extra.length ? " · " + extra.join(" · ") : ""}</div>
-    <div class="pstats">${stat("Cash", `$${p.cash}`)}${stat("Total worth", `$${p.cash + raise}`)}${stat("Properties", props.length)}
+    <div class="pstats">${stat("Cash", cashHtml(p))}${stat("Total worth", `$${p.cash + raise}`)}${stat("Properties", props.length)}
       ${stat("Houses / hotels", `${houses} / ${hotels}`)}${stat("Mortgaged", props.filter(isMortgaged).length)}${stat("Jail cards", p.cards)}</div>
     <div class="hint">Total worth is cash plus what selling every building and mortgaging every property would raise.</div>`;
   for (const d of S.debts.filter((d) => d.debtor === p.id)) html += `<div class="notice bad">Owes <b>$${d.amount}</b> to ${pname(d.creditor)} (${esc(d.reason)}).</div>`;
@@ -811,6 +820,62 @@ function renderTradeForm() {
       view.querySelectorAll(`[data-side="${el.dataset.side}"][data-f="${el.dataset.f}"]`).forEach((o) => { if (o !== el) o.value = side[el.dataset.f]; });
     };
   });
+}
+
+// ------------------------------------------------------------------ cash tally
+
+// Each player's cash on screen runs toward the real figure, with the change beside it
+// (red for a loss, green for a gain) held for a moment, then counting down to nothing
+// as the cash runs, then fading.
+// Renders rebuild the markup mid-run, so the frame loop writes into whatever spans are current.
+const HOLD_MS = 1500, TALLY_MS = 900, FADE_MS = 600;
+const tallies = {}; // player id -> { from, to, start, shown }
+let tallying = false;
+
+function cashHtml(p) {
+  let t = tallies[p.id];
+  if (!t) t = tallies[p.id] = { from: p.cash, to: p.cash, start: -Infinity, shown: p.cash };
+  else if (t.to !== p.cash) {
+    // A change still on show is cut short, so each one is shown on its own rather than summed with the last.
+    Object.assign(t, { from: t.to, to: p.cash, start: performance.now(), shown: t.to });
+    if (!tallying) { tallying = true; requestAnimationFrame(tallyFrame); }
+  }
+  const d = deltaOf(t, performance.now());
+  const delta = d.opacity ? `<span class="money cash-delta ${d.cls}" data-delta="${p.id}" style="opacity:${d.opacity}">${d.text}</span>` : "";
+  return `<span class="money" data-cash="${p.id}">$${t.shown}</span>${delta}`;
+}
+
+function deltaOf(t, now) {
+  const left = t.to - t.shown, age = now - t.start;
+  return {
+    text: `${t.to < t.from ? "-" : "+"}$${Math.abs(left)}`,
+    cls: t.to < t.from ? "down" : "up",
+    opacity: age < HOLD_MS + TALLY_MS ? 1 : Math.max(0, 1 - (age - HOLD_MS - TALLY_MS) / FADE_MS),
+  };
+}
+
+function tallyFrame(now) {
+  tallying = false;
+  for (const [id, t] of Object.entries(tallies)) {
+    const age = now - t.start;
+    if (age > HOLD_MS + TALLY_MS + FADE_MS) {
+      if (!t.done) document.querySelectorAll(`[data-delta="${id}"]`).forEach((el) => el.remove());
+      t.done = true;
+      continue;
+    }
+    t.done = false;
+    tallying = true;
+    const k = Math.min(1, Math.max(0, age - HOLD_MS) / TALLY_MS);
+    t.shown = Math.round(t.from + (t.to - t.from) * (1 - (1 - k) ** 3)); // ease out
+    const d = deltaOf(t, now);
+    document.querySelectorAll(`[data-cash="${id}"]`).forEach((el) => (el.textContent = "$" + t.shown));
+    document.querySelectorAll(`[data-delta="${id}"]`).forEach((el) => {
+      el.textContent = d.text;
+      el.className = `money cash-delta ${d.cls}`;
+      el.style.opacity = d.opacity;
+    });
+  }
+  if (tallying) requestAnimationFrame(tallyFrame);
 }
 
 // ------------------------------------------------------------------ money
