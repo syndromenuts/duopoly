@@ -493,6 +493,16 @@ class Trading(unittest.TestCase):
         act(g, b, "reject_trade", id=1)
         self.assertEqual(g.trades, {})
 
+    def test_one_trade_at_a_time(self):
+        g, (a, b, c) = new_game()
+        give(g, a, 1)
+        act(g, a, "propose_trade", to=b.id, give={"props": [1]}, get={"cash": 10})
+        with self.assertRaises(GameError):
+            act(g, c, "propose_trade", to=a.id, give={"cash": 10})
+        act(g, b, "reject_trade", id=1)
+        act(g, c, "propose_trade", to=a.id, give={"cash": 10})
+        self.assertEqual(len(g.trades), 1)
+
 
 class Bankruptcy(unittest.TestCase):
     def test_debt_then_raise_funds(self):

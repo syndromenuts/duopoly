@@ -654,6 +654,8 @@ class Game:
 
     def a_propose_trade(self, p, data):
         self.require_manage(p)
+        if self.trades:
+            raise GameError("Another trade is on the table. Wait for it to be answered.")
         to = data.get("to")
         if to not in self.players or to == p.id:
             raise GameError("Pick another player.")
