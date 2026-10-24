@@ -894,9 +894,10 @@ function renderProp() {
   const sp = space(openProp), owner = ownerOf(openProp);
   const set = sp.price && owner && BOARD.groups[sp.group].every((q) => ownerOf(q) === owner) ? BOARD.groups[sp.group] : [openProp];
   const m = me(), mine = owner === myId && S.phase === "playing" && !m.bankrupt;
-  let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed">${deedHtml(pos, false, set.length > 1 && groupHasBuildings(pos))}</div>`).join("")}</div>` : deedHtml(openProp);
+  let html = set.length > 1 ? `<div class="deeds">${set.map((pos) => `<div class="deed${isMortgaged(pos) ? " m" : ""}">${deedHtml(pos, false, set.length > 1 && groupHasBuildings(pos))}</div>`).join("")}</div>` : deedHtml(openProp);
   if (mine && sp.price) html += `<div class="hint">Build evenly; you need the whole color group with nothing mortgaged. Sell all buildings in a group before mortgaging.</div>`;
   $("prop-body").classList.toggle("set", set.length > 1);
+  $("prop-body").classList.toggle("m", set.length === 1 && isMortgaged(openProp));
   $("prop-body").innerHTML = html;
 }
 
@@ -1008,7 +1009,7 @@ function showHoverDeed(tile) {
   if (room < 260) { box.hidden = true; return; }
   const pos = Number(tile.dataset.pos);
   const set = tile.classList.contains("stack") ? BOARD.groups[space(pos).group] : [pos];
-  box.innerHTML = set.map((q) => `<div class="card deed">${deedHtml(q, true, set.length > 1 && groupHasBuildings(q))}</div>`).join("");
+  box.innerHTML = set.map((q) => `<div class="card deed${isMortgaged(q) ? " m" : ""}">${deedHtml(q, true, set.length > 1 && groupHasBuildings(q))}</div>`).join("");
   box.style.maxWidth = `${room}px`;
   box.style.left = "0"; // measured from the left edge, so a stale offset doesn't squeeze its width
   box.hidden = false;
