@@ -630,9 +630,9 @@ function renderBuyOffer() {
   const sp = space(m.pos);
   const wait = S.blocked ? waitingReason() : "";
   const rent = sp.type === "utility" ? `<div class="hint">Rent 4× the dice, 10× with both utilities</div>` : rentTable(sp, -1);
+  $("buy-cash").innerHTML = `You have ${cashHtml(m)}`;
   let html = propHead(sp);
   html += `<div class="price">$${sp.price}</div>${rent}`;
-  html += `<div class="hint">You have $${m.cash}${m.cash >= sp.price ? `, leaving $${m.cash - sp.price}` : ""}.</div>`;
   if (wait) html += `<div class="hint">Waiting: ${wait}</div>`;
   else if (m.cash < sp.price) html += `<div class="hint">Not enough cash. You can mortgage or sell to raise it.</div>`;
   html += `<div class="acts">${btn("Buy", "buy", null, "go", !!wait || m.cash < sp.price)}${btn("Decline (auction)", "decline", null, "danger", !!wait)}</div>`;
