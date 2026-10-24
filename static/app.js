@@ -548,9 +548,10 @@ function ownedTiles(id) {
   if (!props.length) return "";
   return `<div class="trade-props">` + props.map((pos) => {
     const sp = space(pos), kind = squareKind(sp), h = housesOn(pos);
-    const bld = h === 5 ? `<span class="bld hotel">H</span>` : h ? `<span class="bld">${"▪".repeat(h)}</span>` : "";
+    // Buildings sit in the colour strip, drawn as on the board.
+    const bld = h ? `<span class="bld${h === 5 ? " hotel" : ""}">${h === 5 ? "" : "■".repeat(h)}</span>` : "";
     return `<button type="button" class="tprop${isMortgaged(pos) ? " m" : ""}" onclick="openProp=${pos};renderProp()" title="${isMortgaged(pos) ? "Mortgaged" : ""}">
-      <span class="strip ${kind}"${kind ? "" : ` style="background:${groupColor(pos)}"`}></span><span class="nm">${esc(sp.name)}</span>${bld}</button>`;
+      <span class="strip ${kind}"${kind ? "" : ` style="background:${groupColor(pos)}"`}>${bld}</span><span class="nm">${esc(sp.name)}</span></button>`;
   }).join("") + `</div>`;
 }
 
