@@ -76,6 +76,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #turns li.out { opacity: .45; }
 #turns li.out .who { text-decoration: line-through; }
 #side { position: relative; width: 360px; max-width: 100%; align-self: stretch; display: flex; flex-direction: column; } /* as tall as the board, so the turn list sits level with its bottom */
+.modal > .card, #side .card, #turns { border: 6px double #5c636b; } /* every popup and side box gets a double rule */
 .cell { position: relative; border: 1px solid var(--cell-line); background: var(--cell); color: var(--cell-fg); overflow: hidden; display: flex; flex-direction: column;
   align-items: center; justify-content: flex-start; text-align: center; font-size: clamp(7px, 1.05vw, 11px); line-height: 1.1; cursor: pointer; }
 .cell:hover { outline: 2px solid var(--accent); z-index: 2; }
@@ -242,7 +243,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .modal > .card.offer, .modal > .card.trade-card { max-width: 860px; text-align: center; }
 .offer h2 { margin-top: 0; }
 /* the auction popup: the property's card beside the current bid and the bid buttons */
-.modal > .card.auction-card { max-width: 640px; display: flex; flex-wrap: wrap; gap: 16px; border: 2px solid var(--warn); }
+.modal > .card.auction-card { max-width: 640px; display: flex; flex-wrap: wrap; gap: 16px; border-color: var(--warn); }
 .auction-card > .deed { flex: 1 1 240px; display: flex; flex-direction: column; }
 .auction-card > .deed > table.rent { flex: 1; margin-bottom: 0; } /* the rent rows spread to the bid side's height, no gap below */
 #auction-bid { flex: 1 1 240px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
