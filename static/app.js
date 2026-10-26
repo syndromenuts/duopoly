@@ -69,8 +69,10 @@ function connect() {
       animateDice();
       animateMoves(next.moves || [], next.drawn.filter((c) => !revealed.has(c.id)), next.flows.filter((f) => !flowsShown.has(f.id)));
       if (animating) render(); // otherwise it was skipped and finishRoll already rendered
-    } else if (animating) held = next;
-    else {
+    } else if (animating) {
+      catchUp(held, next);
+      held = next;
+    } else {
       S = next;
       render();
       showFlows();
@@ -531,6 +533,43 @@ function applyFlows(flows) {
     cash[f.to] = (cash[f.to] || 0) + f.amount;
   }
   S = { ...S, players: S.players.map((p) => (cash[p.id] ? { ...p, cash: p.cash + cash[p.id] } : p)) };
+  render();
+}
+
+// Keys the roll on screen plays out itself, so they wait for it to finish.
+const ROLL_KEYS = new Set(["dice", "doubles", "roll_id", "moves", "drawn", "flows", "log", "stage", "turn", "blocked"]);
+
+// Puts what changed since the held state (a house built, a trade, a bid... made while
+// a roll is still playing out) on screen straight away, rather than once the roll ends.
+// Cash moves by the change alone, so the roll's own payments still land with the roll.
+function catchUp(prev, next) {
+  if (!prev) return;
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const out = { ...S };
+  let changed = false;
+  for (const k of Object.keys(next)) {
+    if (ROLL_KEYS.has(k) || k === "players" || same(prev[k], next[k])) continue;
+    out[k] = next[k];
+    changed = true;
+  }
+  const before = new Map(prev.players.map((p) => [p.id, p]));
+  const shown = new Map(S.players.map((p) => [p.id, p]));
+  out.players = next.players.map((p) => {
+    const b = before.get(p.id), s = shown.get(p.id);
+    if (!b || !s) { changed = true; return p; }
+    const q = { ...s };
+    for (const k of Object.keys(p)) {
+      if (k === "pos" || k === "in_jail" || same(b[k], p[k])) continue;
+      q[k] = k === "cash" ? s.cash + p.cash - b.cash : p[k];
+      changed = true;
+    }
+    return q;
+  });
+  if (!changed) return;
+  // Their payments show on the side as the cash runs, not in the middle once the roll ends.
+  const seen = new Set(prev.flows.map((f) => f.id));
+  for (const f of next.flows) if (!seen.has(f.id)) flowsShown.add(f.id);
+  S = out;
   render();
 }
 
