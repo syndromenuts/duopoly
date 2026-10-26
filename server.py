@@ -2,6 +2,7 @@
 import json
 import os
 import queue
+import signal
 import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -102,6 +103,8 @@ def main():
     port = int(os.environ.get("PORT", "8000"))
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     server.daemon_threads = True
+    # As PID 1 in a container, SIGTERM is ignored unless handled; treat it like Ctrl+C
+    signal.signal(signal.SIGTERM, signal.default_int_handler)
     print(f"Duopoly running on http://0.0.0.0:{port}{' (dev mode)' if GAME.dev else ''}", flush=True)
     try:
         server.serve_forever()
