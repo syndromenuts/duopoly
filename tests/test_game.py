@@ -524,6 +524,74 @@ class Cards(unittest.TestCase):
         self.draw(g, a, "chance", 14)
         self.assertEqual((a.cash, b.cash, c.cash), (1500, 1500, 1500))
 
+    def birthday(self, n=4):
+        """P0 lands on Community Chest and draws the birthday card while everyone else is short."""
+        g, ps = new_game(n)
+        a, others = ps[0], ps[1:]
+        for o in others:
+            o.cash = 10
+        idx = next(i for i, (_, eff) in enumerate(DECKS["chest"]) if eff[0] == "collect_each")
+        g.decks["chest"].remove(idx)
+        g.decks["chest"].insert(0, idx)
+        a.pos = 29
+        roll(g, a, 1, 3)  # Community Chest at 33
+        self.assertEqual([d["debtor"] for d in g.debts], [o.id for o in others])
+        return g, a, others
+
+    def test_birthday_debts_settle_in_any_order(self):
+        g, a, (b, c, d) = self.birthday()
+        give(g, b, 6)
+        give(g, c, 8)
+        act(g, c, "mortgage", pos=8)  # the second debtor pays first
+        self.assertEqual([x["debtor"] for x in g.debts], [b.id, d.id])
+        with self.assertRaises(GameError):
+            act(g, a, "end_turn")
+        act(g, d, "bankrupt")  # one goes under while another still owes
+        self.assertTrue(d.bankrupt)
+        self.assertEqual([x["debtor"] for x in g.debts], [b.id])
+        with self.assertRaises(GameError):
+            act(g, a, "end_turn")
+        act(g, b, "mortgage", pos=6)
+        self.assertEqual(g.debts, [])
+        self.assertEqual(a.cash, 1500 + 50 + 50 + 10)
+        self.assertEqual((b.cash, c.cash), (10, 10))
+        act(g, a, "end_turn")
+        self.assertIs(g.current(), b)
+
+    def test_birthday_bankrupts_everyone_else(self):
+        g, a, (b, c) = self.birthday(3)
+        act(g, c, "bankrupt")
+        self.assertEqual(g.phase, "playing")
+        act(g, b, "bankrupt")
+        self.assertEqual(g.phase, "over")
+        self.assertEqual(g.winner, a.id)
+        self.assertEqual(g.debts, [])
+
+    def test_birthday_creditor_removed_while_owed(self):
+        g, a, (b, c, d) = self.birthday()
+        a.conns = 0
+        a.away_since = 0
+        act(g, b, "kick", id=a.id)
+        self.assertTrue(a.bankrupt)
+        self.assertEqual(g.debts, [])
+        self.assertIs(g.current(), b)
+        self.assertEqual(g.stage, "roll")
+
+    def test_chairman_owed_to_several_players(self):
+        g, (a, b, c, d) = new_game(4)
+        a.cash = 70
+        give(g, a, 1, 3)
+        self.draw(g, a, "chance", 14)  # owes $50 to each of three players
+        self.assertEqual(a.cash, 20)
+        self.assertEqual([x["creditor"] for x in g.debts], [c.id, d.id])
+        act(g, a, "mortgage", pos=1)
+        self.assertEqual([x["creditor"] for x in g.debts], [d.id])
+        act(g, a, "bankrupt")
+        self.assertEqual(g.debts, [])
+        self.assertEqual((g.owners.get(1), g.owners.get(3)), (d.id, d.id))
+        act(g, d, "mortgage_choice", pos=1, pay_off=False)  # the inherited mortgage holds up the turn
+        self.assertIs(g.current(), b)
+
     def test_jailfree_kept_out_of_deck(self):
         g, (a, b, c) = new_game()
         self.draw(g, a, "chest", JAILFREE_INDEX["chest"])

@@ -74,7 +74,7 @@ def step(g, rng):
             return try_act(g, p, "mortgage_choice", pos=p.pending_mortgages[0], pay_off=rng.random() < 0.5) or \
                 try_act(g, p, "mortgage_choice", pos=p.pending_mortgages[0], pay_off=False)
     if g.debts:
-        p = g.players[g.debts[0]["debtor"]]
+        p = g.players[rng.choice(g.debts)["debtor"]]  # several players can owe at once (birthday card)
         if rng.random() < 0.9 and raise_funds(g, rng, p):
             return True
         return try_act(g, p, "bankrupt")
