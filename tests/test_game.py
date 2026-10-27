@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from board import DECKS, GROUPS, JAILFREE_INDEX  # noqa: E402
+from board import DECKS, GROUPS, JAILFREE_INDEX, SPACES  # noqa: E402
 from game import Game, GameError  # noqa: E402
 
 
@@ -232,10 +232,53 @@ class Auctions(unittest.TestCase):
         self.assertNotIn(3, g.owners)
         self.assertIsNone(g.last_auction["winner"])
 
-    def test_cannot_bid_over_cash(self):
+    def overbid(self, cash=50, bid=100):
+        """b wins the property at 3 for more than their cash."""
         g, (a, b, c) = new_game()
         roll(g, a, 1, 2)
         act(g, a, "decline")
+        b.cash = cash
+        act(g, b, "bid", amount=bid)
+        act(g, a, "pass")
+        act(g, c, "pass")
+        return g, (a, b, c)
+
+    def test_can_bid_over_cash_and_owes_the_rest(self):
+        g, (a, b, c) = self.overbid()
+        self.assertIsNone(g.auction)
+        self.assertEqual(g.owners[3], b.id)
+        self.assertEqual(b.cash, 50)
+        self.assertEqual(g.debts, [{"debtor": b.id, "creditor": None, "amount": 100, "pot": False,
+                                    "reason": f"winning bid for {SPACES[3]['name']}", "fine": False, "rent": False, "jail": False, "buy": True}])
+        with self.assertRaises(GameError):
+            act(g, a, "end_turn")  # the turn waits on the debt
+
+    def test_overbid_paid_by_mortgaging(self):
+        g, (a, b, c) = self.overbid(cash=50, bid=100)
+        give(g, b, 39)
+        act(g, b, "mortgage", pos=39)
+        self.assertEqual(g.debts, [])
+        self.assertEqual(b.cash, 150)
+        act(g, a, "end_turn")
+
+    def test_overbid_paid_by_trading(self):
+        g, (a, b, c) = self.overbid(cash=50, bid=100)
+        give(g, b, 39)
+        act(g, b, "propose_trade", to=c.id, give={"props": [39]}, get={"cash": 300})
+        act(g, c, "accept_trade", id=1)
+        self.assertEqual(g.debts, [])
+        self.assertEqual(b.cash, 250)
+        self.assertEqual(g.owners[39], c.id)
+
+    def test_overbid_bankrupt_returns_property_to_auction(self):
+        g, (a, b, c) = self.overbid(cash=50, bid=1000)
+        act(g, b, "bankrupt")
+        self.assertTrue(b.bankrupt)
+        self.assertEqual(g.auction["pos"], 3)
+
+    def test_cannot_bid_over_cash_for_building(self):
+        g, (a, b, c) = new_game()
+        g.start_auction("house", opener=a.id, opening=50, bidders=[a.id, b.id])
         with self.assertRaises(GameError):
             act(g, b, "bid", amount=5000)
 

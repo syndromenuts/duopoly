@@ -777,21 +777,22 @@ function renderAuction() {
 
   $("auction-controls").hidden = !inIt;
   if (!inIt) return;
-  const cash = me().cash;
   renderBidSteps();
   $("bid-amount").min = a.high + 1;
-  $("bid-amount").max = cash;
+  $("bid-amount").max = bidCap(a) ?? "";
   $("bid-btn").disabled = leading;
   $("pass-btn").disabled = leading;
 }
 
 // The steps add to the amount typed so far, or to the high bid once that has caught up with it.
 const bidBase = () => Math.max(Number($("bid-amount").value) || 0, S.auction.high);
+// Properties can be bid past your cash and paid off after; auctioned buildings can't.
+const bidCap = (a) => (a.kind === "property" ? null : me().cash);
 function renderBidSteps() {
   const a = S.auction;
   if (!a || !a.active.includes(myId)) return;
-  const base = bidBase(), cash = me().cash;
-  document.querySelectorAll("[data-inc]").forEach((b) => (b.disabled = a.bidder === myId || base + Number(b.dataset.inc) > cash));
+  const base = bidBase(), cap = bidCap(a) ?? Infinity;
+  document.querySelectorAll("[data-inc]").forEach((b) => (b.disabled = a.bidder === myId || base + Number(b.dataset.inc) > cap));
 }
 
 // The one open trade sits in the middle of every player's screen until it's answered.

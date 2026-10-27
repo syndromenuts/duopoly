@@ -160,13 +160,13 @@ class Game:
         self.flows.append({"id": self.flow_id, "from": src, "to": dst, "amount": amount, "card": self.card_ctx, "go": go, "buy": buy, "fine": fine, "rent": rent, "jail": jail})
         del self.flows[:-30]
 
-    def charge(self, pid, amount, creditor=None, pot=False, reason="", fine=False, rent=False, jail=False):
+    def charge(self, pid, amount, creditor=None, pot=False, reason="", fine=False, rent=False, jail=False, buy=False):
         """Make pid pay amount to creditor (player id) or the bank. Becomes a debt if unaffordable."""
         if amount <= 0:
             return
         p = self.players[pid]
         to_pot = pot and creditor is None and self.rules["free_parking"]
-        debt = {"debtor": pid, "creditor": creditor, "amount": amount, "pot": to_pot, "reason": reason, "fine": fine, "rent": rent, "jail": jail}
+        debt = {"debtor": pid, "creditor": creditor, "amount": amount, "pot": to_pot, "reason": reason, "fine": fine, "rent": rent, "jail": jail, "buy": buy}
         if p.cash >= amount and not any(d["debtor"] == pid for d in self.debts):
             self.pay(debt)
         else:
@@ -176,7 +176,7 @@ class Game:
     def pay(self, debt):
         p = self.players[debt["debtor"]]
         p.cash -= debt["amount"]
-        self.flow(p.id, debt["creditor"] or ("pot" if debt["pot"] else None), debt["amount"], fine=debt.get("fine", False), rent=debt.get("rent", False), jail=debt.get("jail", False))
+        self.flow(p.id, debt["creditor"] or ("pot" if debt["pot"] else None), debt["amount"], fine=debt.get("fine", False), rent=debt.get("rent", False), jail=debt.get("jail", False), buy=debt.get("buy", False))
         if debt["creditor"]:
             self.players[debt["creditor"]].cash += debt["amount"]
         elif debt["pot"]:
@@ -451,7 +451,9 @@ class Game:
         amount = int(data.get("amount", 0))
         if amount <= a["high"]:
             raise GameError(f"Bid must be more than ${a['high']}.")
-        if amount > p.cash:
+        # A property can be bid past your cash and paid off afterwards like any other debt.
+        # A building can't: its winner has to place it before doing anything else.
+        if a["kind"] != "property" and amount > p.cash:
             raise GameError("You can't bid more cash than you have.")
         a["high"] = amount
         a["bidder"] = p.id
@@ -478,13 +480,18 @@ class Game:
         what = SPACES[a["pos"]]["name"] if a["kind"] == "property" else f"a {a['kind']}"
         if a["bidder"]:
             w = self.players[a["bidder"]]
-            w.cash -= a["high"]
-            self.flow(w.id, None, a["high"], buy=a["kind"] == "property")
+            self.say(f"{w.name} won the auction for {what} at ${a['high']}.")
             if a["kind"] == "property":
                 self.owners[a["pos"]] = w.id
+                if w.cash >= a["high"] and not any(d["debtor"] == w.id for d in self.debts):
+                    w.cash -= a["high"]
+                    self.flow(w.id, None, a["high"], buy=True)
+                else:  # bid past their cash: they keep the deed and owe the bank until they raise it
+                    self.charge(w.id, a["high"], None, reason=f"winning bid for {what}", buy=True)
             else:
+                w.cash -= a["high"]
+                self.flow(w.id, None, a["high"])
                 w.pending_build = a["kind"]
-            self.say(f"{w.name} won the auction for {what} at ${a['high']}.")
         else:
             self.say(f"Nobody bid on {what}. It stays with the bank.")
         if a["from_turn"]:
