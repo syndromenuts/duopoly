@@ -583,11 +583,13 @@ function finishRoll() {
   showFlows();
 }
 
-function waitingReason() {
+// What is holding the game up. Pass skipMine to leave out what your own notices already say.
+function waitingReason(skipMine = false) {
   const out = [];
-  for (const d of S.debts) out.push(`${pname(d.debtor)} owes $${d.amount} to ${pname(d.creditor)}`);
+  for (const d of S.debts) if (!(skipMine && d.debtor === myId)) out.push(`${pname(d.debtor)} owes $${d.amount} to ${pname(d.creditor)}`);
   if (S.auction) out.push("an auction is running");
   for (const p of S.players) {
+    if (skipMine && p.id === myId) continue;
     if (p.pending_mortgages.length) out.push(`${esc(p.name)} must decide on mortgaged property`);
     if (p.pending_build) out.push(`${esc(p.name)} must place an auctioned ${p.pending_build}`);
   }
@@ -601,6 +603,8 @@ function renderMe() {
   if (!m) {
     box.innerHTML = `<b>You are watching.</b>`;
     $("status").innerHTML = S.turn ? `<div class="hint">Waiting for ${pname(S.turn)}.</div>` : "";
+    $("dice-block").hidden = true;
+    $("dice").classList.remove("blocked");
     $("game-acts").innerHTML = $("trade-act").innerHTML = "";
     return;
   }
@@ -608,27 +612,29 @@ function renderMe() {
   html += `<div class="cash">${cashHtml(m)}</div></div>`;
   html += ownedTiles(m.id);
   box.innerHTML = html;
-  // Turn prompts and status notices sit in the middle of the board, above the dice.
+  // Turn prompts and status notices sit in the middle of the board, above the dice;
+  // anything holding the game up covers the dice instead.
   html = "";
+  let block = "";
   if (m.bankrupt) {
     html += `<div class="notice bad">You are bankrupt.</div>`;
   } else if (S.phase === "playing") {
     const myDebts = S.debts.filter((d) => d.debtor === myId);
     if (myDebts.length) {
       const d = myDebts[0];
-      html += `<div class="notice bad">You owe <b>$${d.amount}</b> to ${pname(d.creditor)} (${esc(d.reason)}). Raise money by selling buildings,
+      block += `<div class="notice bad">You owe <b>$${d.amount}</b> to ${pname(d.creditor)} (${esc(d.reason)}). Raise money by selling buildings,
         mortgaging or trading. It is paid automatically once you have enough cash.<br>${btn("Raise funds", "open_debt")}${btn("Declare bankruptcy", "bankrupt", null, "danger")}</div>`;
     }
     for (const pos of m.pending_mortgages) {
       const mv = space(pos).price / 2, fee = Math.ceil(mv / 10);
-      html += `<div class="notice">You received mortgaged <b>${esc(space(pos).name)}</b>. Pay it off now for $${mv + fee}, or pay $${fee} (10%) and keep it mortgaged.<br>
+      block += `<div class="notice">You received mortgaged <b>${esc(space(pos).name)}</b>. Pay it off now for $${mv + fee}, or pay $${fee} (10%) and keep it mortgaged.<br>
         ${btn(`Pay off $${mv + fee}`, "mortgage_choice", { pos, pay_off: true })}${btn(`Keep mortgaged ($${fee})`, "mortgage_choice", { pos, pay_off: false }, "secondary")}</div>`;
     }
-    if (m.pending_build) html += `<div class="notice">You won a ${m.pending_build}. Click one of your properties and choose Build to place it.</div>`;
+    if (m.pending_build) block += `<div class="notice">You won a ${m.pending_build}. Click one of your properties and choose Build to place it.</div>`;
+    const others = S.blocked ? waitingReason(true) : ""; // shown to everyone, whoever's turn it is
+    if (others) block += `<div class="notice">Waiting: ${others}</div>`;
     if (myTurn() && !animating) { // the turn's prompts wait until the roll has finished playing out
-      const wait = S.blocked ? waitingReason() : "";
-      if (wait) html += `<div class="notice">Waiting: ${wait}</div>`;
-      const dis = !!wait;
+      const dis = !!(S.blocked && waitingReason());
       if (S.stage === "roll" && m.in_jail) {
         html += `<div>You are in Jail (attempt ${m.jail_turns + 1} of 3).</div>`;
         html += btn("Pay $50", "pay_jail", null, "", dis || m.cash < 50);
@@ -639,6 +645,11 @@ function renderMe() {
     }
   }
   $("status").innerHTML = html;
+  if (animating) block = ""; // let the roll play out before covering the dice
+  $("dice-block").innerHTML = block;
+  $("dice-block").hidden = !block;
+  $("dice").classList.toggle("blocked", !!block);
+  if (block) $("end-turn").hidden = true;
   // The end-game button sits just above the turn list, and Propose trade above the log.
   let acts = "";
   if (S.phase === "playing" && !m.bankrupt) {

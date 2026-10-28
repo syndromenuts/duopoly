@@ -170,7 +170,13 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #status:empty { display: none; }
 #status .notice { text-align: left; color: var(--fg); }
 #status .hint { margin: 4px 0; }
-#center .dice.spent .die { filter: grayscale(1) brightness(.7); opacity: .45; }
+#center .dice.spent .die, #center .dice.blocked .die { filter: grayscale(1) brightness(.7); opacity: .45; }
+/* Notices that hold the game up sit over the dice, which grey out beneath them. */
+#dice-block { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; width: calc(var(--B) * .55);
+  font-size: clamp(12px, 1.6vw, 15px); }
+#dice-block[hidden] { display: none; }
+#dice-block .notice { background: var(--card); color: var(--fg); border: 6px double #5c636b; border-radius: var(--radius); padding: 12px; margin: 8px 0;
+  box-shadow: 0 0 14px 4px rgba(214,69,69,.6), 0 4px 12px rgba(0,0,0,.5); } /* styled like the popups, glowing red */
 #center .end-turn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 #center .end-turn button { margin: 0; padding: 8px 18px; white-space: nowrap; font-size: clamp(13px, 1.7vw, 16px); animation: end-turn-pulse 1.4s ease-in-out infinite; }
 @keyframes end-turn-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
