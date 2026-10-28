@@ -227,7 +227,13 @@ function render() {
   const inGame = S.phase !== "lobby";
   $("lobby").hidden = inGame;
   $("game").hidden = !inGame;
-  if (!inGame) { $("offer-modal").hidden = $("player-modal").hidden = $("debt-modal").hidden = $("jail-modal").hidden = true; return renderLobby(); }
+  if (!inGame) {
+    $("offer-modal").hidden = $("player-modal").hidden = $("debt-modal").hidden = $("jail-modal").hidden = true;
+    // Everyone sits at $0 in the lobby, so the next game's starting cash counts up from nothing.
+    for (const id in tallies) delete tallies[id];
+    for (const p of S.players) tallies[p.id] = { from: 0, to: 0, start: -Infinity, shown: 0, done: true };
+    return renderLobby();
+  }
   renderBoard();
   renderMe();
   renderBuyOffer();
