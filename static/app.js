@@ -18,6 +18,7 @@ let seenAuction = null; // number of the latest finished auction already shown
 let auctionResultUntil = 0; // until when the popup stays up showing who won
 let openPlayer = null; // id of the player shown in the player popup
 let debtHidden = null; // the debt whose raise-funds popup was waved away, so it stays shut until another comes due
+let wasBankrupt = null; // whether I was bankrupt in the last state rendered (null before the first), so the popup shows only as it happens
 let joinColor = null;
 let seenRoll = null; // roll_id already shown, so only fresh rolls animate
 let rollingUntil = 0;
@@ -206,6 +207,7 @@ function bindStatic() {
     if (b.dataset.act === "counter") return counterTrade(data.id);
     if (b.dataset.act === "view_player") { openPlayer = data.id; return renderPlayerDetail(); }
     if (b.dataset.act === "hide_debt") return hideDebt();
+    if (b.dataset.act === "close_bankrupt") { if (e.target === b) b.hidden = true; return; } // only a click on the backdrop, not the card
     if (b.dataset.act === "open_debt") { debtHidden = null; return renderDebt(); }
     if (b.dataset.act === "trade_with") { closePlayer(); return openTrade(emptyDraft(data.id)); }
     if (b.dataset.act === "roll") { // the dice or the jail popup's Roll; one roll per click, a refused roll makes the dice clickable again
@@ -228,7 +230,7 @@ function render() {
   $("lobby").hidden = inGame;
   $("game").hidden = !inGame;
   if (!inGame) {
-    $("offer-modal").hidden = $("player-modal").hidden = $("debt-modal").hidden = $("jail-modal").hidden = true;
+    $("offer-modal").hidden = $("player-modal").hidden = $("debt-modal").hidden = $("jail-modal").hidden = $("bankrupt-modal").hidden = true;
     // Everyone sits at $0 in the lobby, so the next game's starting cash counts up from nothing.
     for (const id in tallies) delete tallies[id];
     for (const p of S.players) tallies[p.id] = { from: 0, to: 0, start: -Infinity, shown: 0, done: true };
@@ -243,6 +245,7 @@ function render() {
   renderPlayerDetail();
   renderDebt();
   renderJail();
+  renderBankrupt();
   $("log").innerHTML = S.log.slice().reverse().map((l) => `<li>${esc(l)}</li>`).join("");
   renderProp();
 }
@@ -622,9 +625,7 @@ function renderMe() {
   // anything holding the game up covers the dice instead.
   html = "";
   let block = "";
-  if (m.bankrupt) {
-    html += `<div class="notice bad">You are bankrupt.</div>`;
-  } else if (S.phase === "playing") {
+  if (!m.bankrupt && S.phase === "playing") {
     const myDebts = S.debts.filter((d) => d.debtor === myId);
     if (myDebts.length) {
       const d = myDebts[0];
@@ -941,6 +942,13 @@ function renderJail() {
     + `${m.cards ? btn("Use Get Out of Jail Free", "use_card", null, "", !!wait) : ""}</div>`;
   const body = $("jail-body");
   if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
+}
+
+// The moment I go bankrupt, a popup laughs at me. Joining already bankrupt skips it.
+function renderBankrupt() {
+  const now = !!(me() && me().bankrupt);
+  if (wasBankrupt === false && now) $("bankrupt-modal").hidden = false;
+  wasBankrupt = now;
 }
 
 function hideDebt() {

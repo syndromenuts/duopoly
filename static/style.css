@@ -311,6 +311,9 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .modal > .card.jail-card { max-width: 380px; text-align: center; }
 .jail-card .cuffs { display: block; height: 96px; margin: 4px auto 8px; filter: invert(1) brightness(.9); } /* black artwork, lightened for the dark card */
 .jail-card h2 { justify-content: center; }
+.modal > .card.bankrupt-card { max-width: 480px; text-align: center; border-color: var(--danger); }
+.bankrupt-card img { display: block; width: min(280px, 70vw); margin: 0 auto; }
+.bankrupt-card h2 { justify-content: center; font-size: clamp(2.2rem, 9vw, 3.5rem); color: var(--danger); margin: 8px 0 16px; }
 .debt-cash { font-size: 40px; font-weight: 700; text-align: center; line-height: 1.2; margin: 6px 0; }
 .offer .acts, .trade-card .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .offer .acts button, .trade-card .acts button { margin: 0; }
