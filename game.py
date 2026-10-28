@@ -103,6 +103,7 @@ class Game:
         self.last_auction = None  # how the latest auction ended, for the result shown to everyone
         self.trades = {}
         self.next_trade = 1
+        self.counter = None  # {"from", "to"} while a trade's receiver drafts a counter offer to its proposer
         self.winner = None
         self.drawn = []  # cards drawn this turn, shown until the turn ends
 
@@ -698,7 +699,7 @@ class Game:
 
     def a_propose_trade(self, p, data):
         self.require_manage(p)
-        if self.trades:
+        if self.trades or (self.counter and self.counter["from"] != p.id):
             raise GameError("Another trade is on the table. Wait for it to be answered.")
         to = data.get("to")
         if to not in self.players or to == p.id:
@@ -710,6 +711,7 @@ class Game:
         self.check_trade(t)
         self.trades[t["id"]] = t
         self.next_trade += 1
+        self.counter = None
         self.say(f"{p.name} proposed a trade to {self.players[to].name}.")
 
     def get_trade(self, data):
@@ -750,6 +752,19 @@ class Game:
         del self.trades[t["id"]]
         self.say(f"{p.name} {'cancelled' if p.id == t['from'] else 'rejected'} a trade.")
 
+    # Turns the offer down and holds the table for a counter offer, so its proposer knows one is coming.
+    def a_counter_trade(self, p, data):
+        t = self.get_trade(data)
+        if t["to"] != p.id:
+            raise GameError("That trade isn't for you.")
+        del self.trades[t["id"]]
+        self.counter = {"from": p.id, "to": t["from"]}
+        self.say(f"{p.name} is countering {self.players[t['from']].name}'s trade.")
+
+    def a_cancel_counter(self, p, data):
+        if self.counter and self.counter["from"] == p.id:
+            self.counter = None
+
     # ------------------------------------------------------------ bankruptcy
 
     def a_bankrupt(self, p, data):
@@ -767,6 +782,8 @@ class Game:
         self.say(f"{p.name} is bankrupt{' to ' + creditor.name if creditor else ''}.")
         self.debts = [d for d in self.debts if p.id not in (d["debtor"], d["creditor"])]
         self.trades = {k: t for k, t in self.trades.items() if p.id not in (t["from"], t["to"])}
+        if self.counter and p.id in self.counter.values():
+            self.counter = None
         a = self.auction
         if a and p.id in a["active"]:
             a["active"].remove(p.id)
@@ -898,6 +915,8 @@ class Game:
             p.conns += delta
             if p.conns == 0:
                 p.away_since = time.time()
+                if self.counter and self.counter["from"] == p.id:  # their draft went with them
+                    self.counter = None
 
     def act(self, token, kind, data):
         if kind == "join":
@@ -957,7 +976,7 @@ class Game:
             "bank_houses": self.bank_houses, "bank_hotels": self.bank_hotels, "pot": self.pot,
             "debts": self.debts, "auction": self.auction, "auction_queue": self.auction_queue,
             "last_auction": self.last_auction,
-            "trades": list(self.trades.values()), "winner": self.winner, "drawn": self.drawn,
+            "trades": list(self.trades.values()), "counter": self.counter, "winner": self.winner, "drawn": self.drawn,
             "flows": self.flows,
             "log": self.log[-60:], "colors": TOKEN_COLORS, "dev": self.dev,
         }

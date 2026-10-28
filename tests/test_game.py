@@ -653,6 +653,35 @@ class Trading(unittest.TestCase):
         act(g, c, "propose_trade", to=a.id, give={"cash": 10})
         self.assertEqual(len(g.trades), 1)
 
+    def test_counter_holds_the_table(self):
+        g, (a, b, c) = new_game()
+        give(g, a, 1)
+        act(g, a, "propose_trade", to=b.id, give={"props": [1]}, get={"cash": 10})
+        with self.assertRaises(GameError):
+            act(g, a, "counter_trade", id=1)  # only the receiver counters
+        act(g, b, "counter_trade", id=1)
+        self.assertEqual(g.trades, {})
+        self.assertEqual(g.state()["counter"], {"from": b.id, "to": a.id})
+        with self.assertRaises(GameError):
+            act(g, c, "propose_trade", to=a.id, give={"cash": 10})
+        act(g, b, "propose_trade", to=a.id, give={"cash": 50}, get={"props": [1]})
+        self.assertIsNone(g.counter)
+        self.assertEqual(len(g.trades), 1)
+
+    def test_counter_given_up(self):
+        g, (a, b, c) = new_game()
+        give(g, a, 1)
+        act(g, a, "propose_trade", to=b.id, give={"props": [1]}, get={"cash": 10})
+        act(g, b, "counter_trade", id=1)
+        act(g, a, "cancel_counter")  # not theirs to cancel
+        self.assertIsNotNone(g.counter)
+        act(g, b, "cancel_counter")
+        self.assertIsNone(g.counter)
+        act(g, a, "propose_trade", to=b.id, give={"props": [1]}, get={"cash": 10})
+        act(g, b, "counter_trade", id=2)
+        g.connect(b.token, -1)  # the draft leaves with them
+        self.assertIsNone(g.counter)
+
 
 class Bankruptcy(unittest.TestCase):
     def test_debt_then_raise_funds(self):

@@ -185,7 +185,7 @@ function bindStatic() {
     if (tile !== showHoverDeed.tile) showHoverDeed(showHoverDeed.tile = tile);
   });
   $("trade-send").onclick = async () => {
-    if (await send("propose_trade", tradeDraft)) closeTrade();
+    if (await send("propose_trade", tradeDraft)) { tradeDraft.counter = false; closeTrade(); } // a sent counter needs no cancelling
   };
 
   // The log starts collapsed to its latest entry; its header toggles the full list.
@@ -649,7 +649,7 @@ function renderMe() {
   $("game-acts").innerHTML = acts;
   // Propose a trade by clicking a player; locked during an auction or while a trade is open.
   const others = S.order.map(player).filter((p) => p.id !== myId && !p.bankrupt);
-  const locked = !!S.auction || !!S.trades.length;
+  const locked = !!S.auction || !!S.trades.length || !!S.counter;
   $("trade-act").innerHTML = S.phase === "playing" && !m.bankrupt && others.length
     ? `<div class="card"><h3>Propose trade<img class="handshake" src="images/handshake.png" alt=""></h3><ul class="plain">` + others.map((p) => `<li><button type="button" class="secondary" data-act="trade_with"
         data-arg='${JSON.stringify({ id: p.id })}'${locked ? " disabled" : ""}><span class="dot" style="background:${p.color}"></span><span class="nm">${esc(p.name)}</span><span>$${p.cash}</span></button></li>`).join("") + `</ul></div>`
@@ -797,11 +797,15 @@ function renderBidSteps() {
 
 // The one open trade sits in the middle of every player's screen until it's answered.
 // Only the receiver can accept, counter or reject; the proposer can withdraw; everyone else just watches.
+// While the receiver drafts a counter, everyone else is told one is on its way.
 function renderOffer() {
-  const t = S.trades[0];
+  const t = S.trades[0], c = S.counter;
+  // A counter left without its draft (say, after a reload) is given up, so it doesn't hold the table.
+  if (c && c.from === myId && !tradeDraft) send("cancel_counter");
   const modal = $("offer-modal");
-  modal.hidden = !t;
-  if (!t) return showHoverDeed(showHoverDeed.tile = null);
+  modal.hidden = !t && !(c && c.from !== myId);
+  if (modal.hidden) return showHoverDeed(showHoverDeed.tile = null);
+  if (!t) return renderCounter(c);
   // A new offer closes any draft, which would cover it and can't be sent while it's open anyway.
   // Only a new one, so the counter draft opened over the offer it rejects isn't closed by a stale render.
   if (t.id !== seenTrade && tradeDraft) closeTrade();
@@ -817,6 +821,14 @@ function renderOffer() {
     acts = t.from === myId ? btn("Withdraw offer", "reject_trade", { id: t.id }, "danger") : `<div class="hint">Waiting for ${pname(t.to)} to answer.</div>`;
   }
   const html = `<h2>${title}</h2>${view}<div class="acts">${acts}</div>`;
+  const body = $("offer-body");
+  if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
+}
+
+function renderCounter(c) {
+  const html = `<img class="counter-art" src="images/handshake.png" alt=""><h2>Counter offer coming</h2>
+    <div class="hint">${c.to === myId ? `${pname(c.from)} turned down your offer and is putting together a counter offer.`
+      : `${pname(c.from)} is putting together a counter offer to ${pname(c.to)}.`}</div>`;
   const body = $("offer-body");
   if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
 }
@@ -865,7 +877,7 @@ function renderPlayerDetail() {
   html += props.length ? ownedTiles(p.id) : `<div class="hint">No properties.</div>`;
   let acts = "";
   if (S.phase === "playing" && me() && !me().bankrupt && p.id !== myId && !p.bankrupt && S.order.includes(p.id))
-    acts += btn("Propose trade", "trade_with", { id: p.id }, "", !!S.auction || !!S.trades.length);
+    acts += btn("Propose trade", "trade_with", { id: p.id }, "", !!S.auction || !!S.trades.length || !!S.counter);
   if (acts) html += `<div class="acts">${acts}</div>`;
   const body = $("player-body");
   if (body.dataset.html !== html) { body.innerHTML = html; body.dataset.html = html; }
@@ -995,16 +1007,18 @@ function openTrade(draft) {
   renderTradeForm();
 }
 
-function counterTrade(id) {
+// The draft opens before the server hears of the counter, so the state that comes back finds it open.
+async function counterTrade(id) {
   const t = S.trades.find((x) => x.id === id);
   if (!t) return;
-  send("reject_trade", { id });
-  openTrade({ to: t.from, give: structuredClone(t.get), get: structuredClone(t.give) });
+  openTrade({ to: t.from, give: structuredClone(t.get), get: structuredClone(t.give), counter: true });
+  if (!(await send("counter_trade", { id }))) closeTrade();
 }
 
 function closeTrade() {
   $("trade-modal").hidden = true;
   showHoverDeed(showHoverDeed.tile = null);
+  if (tradeDraft?.counter && S.counter?.from === myId) send("cancel_counter");
   tradeDraft = null;
 }
 
@@ -1057,7 +1071,7 @@ function showHoverDeed(tile) {
 }
 
 function renderTradeForm() {
-  $("trade-title").textContent = "Trade";
+  $("trade-title").textContent = tradeDraft.counter ? "Counter offer" : "Trade";
   const view = $("trade-view");
   view.innerHTML = tradeView([myId, "give", tradeDraft.give], [tradeDraft.to, "get", tradeDraft.get], true);
   view.querySelectorAll("[data-pos]").forEach((b) => {

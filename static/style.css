@@ -263,6 +263,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .deed.m { background-image: repeating-linear-gradient(45deg, transparent 0 5px, rgba(255,255,255,.07) 5px 10px); } /* mortgaged: striped like its board space */
 .modal > .card.offer, .modal > .card.trade-card { max-width: clamp(560px, 100vw - 2 * 292px, 860px); text-align: center; } /* narrowed to leave room for the hovered deed on its left */
 .offer h2 { margin-top: 0; }
+.offer .counter-art { display: block; height: 72px; margin: 4px auto 8px; } /* over the counter-offer notice */
 /* the auction popup: the property's card beside the current bid and the bid buttons */
 .modal > .card.auction-card { max-width: 640px; display: flex; flex-wrap: wrap; gap: 16px; border-color: var(--warn); }
 .auction-card > .deed { flex: 1 1 240px; display: flex; flex-direction: column; }
