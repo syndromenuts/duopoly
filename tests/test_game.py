@@ -83,7 +83,7 @@ class Lobby(unittest.TestCase):
 class Movement(unittest.TestCase):
     def test_buy_and_end_turn(self):
         g, (a, b, c) = new_game()
-        roll(g, a, 1, 2)  # Baker Row (3)
+        roll(g, a, 1, 2)  # iPhone Case (3)
         self.assertEqual(g.stage, "buy")
         act(g, a, "buy")
         self.assertEqual(g.owners[3], a.id)
@@ -111,7 +111,7 @@ class Movement(unittest.TestCase):
         g.decks["chest"] = [1] + [i for i in g.decks["chest"] if i != 1]  # bank error, harmless
         roll(g, a, 1, 1)  # 2 Community Chest
         self.assertEqual(g.stage, "roll")
-        roll(g, a, 2, 2)  # 6 Elm Street
+        roll(g, a, 2, 2)  # 15,777.7 Yen (6)
         resolve_buy(g)
         self.assertEqual(g.stage, "roll")
         roll(g, a, 3, 3)
@@ -693,7 +693,7 @@ class Bankruptcy(unittest.TestCase):
         give(g, a, 31)
         a.cash = 1900
         a.pos = 37
-        roll(g, a, 1, 1)  # Summit Avenue with a hotel: $2000
+        roll(g, a, 1, 1)  # 3,300 lb Cow Manure with a hotel: $2000
         self.assertEqual(len(g.debts), 1)
         with self.assertRaises(GameError):
             act(g, a, "roll")
