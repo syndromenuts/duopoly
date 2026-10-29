@@ -154,7 +154,7 @@ class Game:
     # ----------------------------------------------------------------- money
 
     def flow(self, src, dst, amount, go=False, buy=False, fine=False, rent=False, jail=False):
-        """Record amount moving from src to dst: a player id, None for the bank, or "pot" for Free Parking."""
+        """Record amount moving from src to dst: a player id, None for the bank, or "pot" for the Car Park pot."""
         if amount <= 0:
             return
         self.flow_id += 1
@@ -202,7 +202,7 @@ class Game:
         amount = 400 if landed and self.rules["double_go"] else 200
         p.cash += amount
         self.flow(None, p.id, amount, go=True)
-        self.say(f"{p.name} collected ${amount} for {'landing on' if landed else 'passing'} GO.")
+        self.say(f"{p.name} collected ${amount} for {'landing on' if landed else 'passing'} Start.")
 
     def relocate(self, p, target, how):
         # how: "walk" forward, "back" backward, or "jump" straight there
@@ -255,7 +255,7 @@ class Game:
         elif t == "gotojail":
             self.send_to_jail(p)
         elif t == "parking" and self.rules["free_parking"] and self.pot:
-            self.say(f"{p.name} collected the Free Parking pot of ${self.pot}.")
+            self.say(f"{p.name} collected the pot of ${self.pot}.")
             p.cash += self.pot
             self.flow("pot", p.id, self.pot)
             self.pot = 0

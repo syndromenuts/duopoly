@@ -22,7 +22,7 @@ podman run -d --name duopoly -p 8000:8000 duopoly
 
 ## Rules implemented
 - 40-space standard board with the standard prices and rents. Brown and dark blue have 2 properties each, the other color groups have 3. There are 4 stations and 2 utilities.
-- Doubles give another roll. Three doubles in a row send you to Jail. Passing GO pays $200.
+- Doubles give another roll. Three doubles in a row send you to Jail. Passing Start pays $200.
 - Unbought property goes to auction:
   - everyone can bid, including the player who declined
   - bids are limited to your cash
@@ -47,7 +47,7 @@ podman run -d --name duopoly -p 8000:8000 duopoly
   - If you can't pay, you raise money by selling, mortgaging or trading. The debt is paid automatically once you have the cash.
   - If you declare bankruptcy to a player, they get everything you own.
   - If you go bankrupt to the bank, your properties are auctioned.
-- Optional house rules, set in the lobby: Free Parking pot, $400 for landing on GO, starting cash.
+- Optional house rules, set in the lobby: a pot for taxes and fines on the Car Park, $400 for landing on Start, starting cash.
 - Players disconnected for 2 minutes can be removed. Removal counts as bankruptcy to the bank. The game can also be ended early if every connected player votes to end it.
 
 ## Tests

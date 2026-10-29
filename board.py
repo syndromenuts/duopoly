@@ -19,7 +19,7 @@ def simple(name, kind, **extra):
 
 
 SPACES = [
-    simple("GO", "go"),
+    simple("Start", "go"),
     street("Nintendo Switch Game", "brown", 60, [2, 10, 30, 90, 160, 250], 50),
     simple("Community Chest", "chest"),
     street("iPhone Case", "brown", 60, [4, 20, 60, 180, 320, 450], 50),
@@ -39,7 +39,7 @@ SPACES = [
     simple("Community Chest", "chest"),
     street("12-Pack of Caulk", "orange", 180, [14, 70, 200, 550, 750, 950], 100),
     street("Electric Bidet", "orange", 200, [16, 80, 220, 600, 800, 1000], 100),
-    simple("Free Parking", "parking"),
+    simple("Car Park", "parking"),
     street("18 lb Raw Almonds", "red", 220, [18, 90, 250, 700, 875, 1050], 150),
     simple("Chance", "chance"),
     street("My Thingy", "red", 220, [18, 90, 250, 700, 875, 1050], 150),
@@ -49,7 +49,7 @@ SPACES = [
     street("Annual Photoshop", "yellow", 260, [22, 110, 330, 800, 975, 1150], 150),
     utility("Water Works"),
     street("Mahjong Set", "yellow", 280, [24, 120, 360, 850, 1025, 1200], 150),
-    simple("Go To Jail", "gotojail"),
+    simple("Police Station", "gotojail"),
     street("AirPods Pro", "green", 300, [26, 130, 390, 900, 1100, 1275], 200),
     street("Xbox Series S", "green", 300, [26, 130, 390, 900, 1100, 1275], 200),
     simple("Community Chest", "chest"),
@@ -75,7 +75,7 @@ GROUP_COLORS = {
 JAIL = 10
 
 # Card effects:
-#   ("advance", pos)          move forward to pos (collect GO salary if passed)
+#   ("advance", pos)          move forward to pos (collect the Start salary if passed)
 #   ("nearest", "station")    advance to nearest station, pay owner twice the rent
 #   ("nearest", "utility")    advance to nearest utility, pay owner 10x a new dice throw
 #   ("money", n)              receive n (or pay -n to the bank)
@@ -87,30 +87,30 @@ JAIL = 10
 #   ("collect_each", n)       collect n from every other player
 CHANCE = [
     ("Advance to 3,300 lb Cow Manure.", ("advance", 39)),
-    ("Advance to GO. Collect $200.", ("advance", 0)),
-    ("Advance to Disney Ticket. If you pass GO, collect $200.", ("advance", 24)),
-    ("Advance to LAX–SEA Plane Ticket. If you pass GO, collect $200.", ("advance", 11)),
+    ("Advance to Start. Collect $200.", ("advance", 0)),
+    ("Advance to Disney Ticket. If you pass Start, collect $200.", ("advance", 24)),
+    ("Advance to LAX–SEA Plane Ticket. If you pass Start, collect $200.", ("advance", 11)),
     ("Advance to the nearest Station. If owned, pay the owner twice the rent.", ("nearest", "station")),
     ("Advance to the nearest Station. If owned, pay the owner twice the rent.", ("nearest", "station")),
     ("Advance to the nearest Utility. If owned, throw dice and pay the owner 10x the throw.", ("nearest", "utility")),
     ("Bank pays you a dividend of $50.", ("money", 50)),
     ("Get Out of Jail Free. Keep this card until needed or traded.", ("jailfree",)),
     ("Go back 3 spaces.", ("back", 3)),
-    ("Go to Jail. Do not pass GO, do not collect $200.", ("jail",)),
+    ("Go to Jail. Do not pass Start, do not collect $200.", ("jail",)),
     ("General repairs: pay $25 per house and $100 per hotel.", ("repairs", 25, 100)),
     ("Speeding fine: pay $100.", ("money", -100)),
-    ("Take a trip to South Station. If you pass GO, collect $200.", ("advance", 5)),
+    ("Take a trip to South Station. If you pass Start, collect $200.", ("advance", 5)),
     ("You have been elected chairman of the board. Pay each player $50.", ("pay_each", 50)),
     ("Your building loan matures. Collect $150.", ("money", 150)),
 ]
 
 CHEST = [
-    ("Advance to GO. Collect $200.", ("advance", 0)),
+    ("Advance to Start. Collect $200.", ("advance", 0)),
     ("Bank error in your favor. Collect $200.", ("money", 200)),
     ("Doctor's fee. Pay $50.", ("money", -50)),
     ("From sale of stock you get $50.", ("money", 50)),
     ("Get Out of Jail Free. Keep this card until needed or traded.", ("jailfree",)),
-    ("Go to Jail. Do not pass GO, do not collect $200.", ("jail",)),
+    ("Go to Jail. Do not pass Start, do not collect $200.", ("jail",)),
     ("Holiday fund matures. Receive $100.", ("money", 100)),
     ("Income tax refund. Collect $120.", ("money", 120)),
     ("It is your birthday. Collect $50 from every player.", ("collect_each", 50)),

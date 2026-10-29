@@ -273,7 +273,7 @@ function renderLobby() {
 const JAIL_BARS = `<svg class="bars" viewBox="0 0 40 40"><path d="M6.75 0v40M15 0v40M23.25 0v40"/>
   <rect class="lock" x="30" y="15" width="10" height="12" rx="1.5"/><path class="keyhole" d="M35 18.5a1.8 1.8 0 1 1 0 3.6a1.8 1.8 0 1 1 0-3.6M34.2 21.5h1.6l.6 3.5h-2.8z"/></svg>`;
 
-// Pictures for the middle of the Chance, Community Chest, tax, station, utility, Free Parking and Go To Jail squares.
+// Pictures for the middle of the Chance, Community Chest, tax, station, utility, Car Park and Police Station squares.
 const SQUARE_ICONS = {
   chance: `<svg class="icon" viewBox="0 0 24 24"><path d="M8 8.5a4 4 0 1 1 5.6 3.7c-1 .45-1.6 1.3-1.6 2.3v1.5"/><circle class="fill" cx="12" cy="19.5" r="1.4"/></svg>`,
   chest: `<img class="icon" src="images/chest.png" alt="">`,
@@ -284,6 +284,9 @@ const SQUARE_ICONS = {
   parking: `<img class="icon parking" src="images/car.png" alt="">`,
   gotojail: `<img class="icon gotojail" src="images/police.png" alt="">`,
 };
+
+// Corners that go by their picture alone, on the board and in their details.
+const UNLABELED = ["go", "parking", "gotojail"];
 
 // Where inmates stand in the box, as % of its width: up to 3 to a row, clear of the lock plate, the
 // first two in the gaps between bars. Rows are added as the cell fills (8 players need 3, at the y's below).
@@ -313,10 +316,10 @@ function renderBoard() {
     if (sp.type === "jail") {
       // Jailed players sit inside the cell, behind the bars; visitors stay in the L outside the box.
       html += `<div class="jailbox"><div class="inmates">${inmateDots(here.filter((p) => p.in_jail))}</div>${JAIL_BARS}</div>`;
-    } else html += `<div class="nm">${esc(sp.name)}</div>`;
+    } else if (!UNLABELED.includes(sp.type)) html += `<div class="nm">${esc(sp.name)}</div>`;
     const pic = SQUARE_ICONS[sp.type === "utility" ? (sp.name.startsWith("Power") ? "power" : "water") : sp.type];
     if (pic) html += pic;
-    if (sp.type === "go") html += `<svg class="arrow" viewBox="2.5 3 20.5 18"><path d="M21 12H5M12 4.5 4.5 12l7.5 7.5"/></svg>`; // play runs leftward from GO
+    if (sp.type === "go") html += `<svg class="arrow" viewBox="2.5 3 20.5 18"><path d="M21 12H5M12 4.5 4.5 12l7.5 7.5"/></svg>`; // play runs leftward from Start
     if (sp.price) html += `<div class="pr">$${sp.price}</div>`;
     if (sp.type === "tax") html += `<div class="pr">pay $${sp.amount}</div>`;
     if (i === 20 && S.rules.free_parking) html += `<div class="pr">Pot $${S.pot}</div>`;
@@ -328,7 +331,7 @@ function renderBoard() {
   renderDice();
   let center = "";
   if (S.phase === "over") center += `<h2>🏆 ${pname(S.winner)} wins!</h2>${btn("New game", "vote_reset")}`;
-  center += `<div class="hint">Bank: ${S.bank_houses} houses, ${S.bank_hotels} hotels${S.rules.free_parking ? ` · Free Parking pot $${S.pot}` : ""}</div>`;
+  center += `<div class="hint">Bank: ${S.bank_houses} houses, ${S.bank_hotels} hotels${S.rules.free_parking ? ` · Pot $${S.pot}` : ""}</div>`;
   center += `<div class="hint">Click any space for details. Click your own properties to build or mortgage.</div>`;
   const m = me();
   const canEnd = !!m && !m.bankrupt && S.phase === "playing" && myTurn() && !animating && S.stage === "done" && !(S.blocked && waitingReason());
@@ -517,7 +520,7 @@ async function animateMoves(moves, cards = [], flows = []) {
   if (run === animateMoves.run) finishRoll();
 }
 
-// Stops on GO to pay the salary on screen, and stays until the change has counted in and faded,
+// Stops on Start to pay the salary on screen, and stays until the change has counted in and faded,
 // so it shows apart from whatever the move costs after. It shows on the side only, not in the middle.
 async function collectGo(pid, flows) {
   const f = flows.find((f) => f.go && f.to === pid && !flowsShown.has(f.id));
@@ -982,7 +985,7 @@ function renderProp() {
 // `pad` leaves room for buildings under the head, so deeds side by side line up when only some are built on.
 function deedHtml(pos, bare = false, pad = false) {
   const sp = space(pos), owner = ownerOf(pos), h = housesOn(pos);
-  let html = propHead(sp, h, pad);
+  let html = UNLABELED.includes(sp.type) ? "" : propHead(sp, h, pad);
   if (sp.price) html += owner ? `<div class="hint">Mortgage value</div><div class="price mortgage">$${sp.price / 2}</div>` : `<div class="price">$${sp.price}</div>`;
   if (sp.type === "property" || sp.type === "station") {
     html += rentTable(sp, owner ? h : -1);
@@ -1197,7 +1200,7 @@ function showMoney(flows, belowCard = false) {
   if (!flows.length || document.hidden) return Promise.resolve();
   const box = $("money"), run = (showMoney.run = {});
   const party = (id) => {
-    if (id === "pot") return `<div class="party"><b>Free Parking</b></div>`;
+    if (id === "pot") return `<div class="party"><b>Pot</b></div>`;
     if (!id) return `<div class="party"><b>Bank</b></div>`;
     const p = player(id);
     // Their cash runs with the same tally as on the side, which writes into every data-cash span.
@@ -1253,7 +1256,7 @@ function showMoney(flows, belowCard = false) {
 // Shows the payments in the state on screen that have not been shown yet.
 function showFlows() {
   const fresh = S.flows.filter((f) => !flowsShown.has(f.id));
-  const side = (f) => f.go || f.buy || f.jail; // GO salary, property purchases and the Jail fine show on the side only
+  const side = (f) => f.go || f.buy || f.jail; // Start salary, property purchases and the Jail fine show on the side only
   fresh.forEach((f) => side(f) && flowsShown.add(f.id));
   if (S.phase !== "lobby") showMoney(fresh.filter((f) => !side(f)));
 }

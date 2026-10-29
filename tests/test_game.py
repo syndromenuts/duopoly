@@ -122,8 +122,8 @@ class Movement(unittest.TestCase):
     def test_passing_go(self):
         g, (a, b, c) = new_game()
         a.pos = 38
-        roll(g, a, 1, 3)  # -> 2 (Community Chest), passes GO
-        self.assertIn("P0 collected $200 for passing GO.", g.log)
+        roll(g, a, 1, 3)  # -> 2 (Community Chest), passes Start
+        self.assertIn("P0 collected $200 for passing Start.", g.log)
 
     def test_double_go_house_rule(self):
         g, (a, b, c) = new_game(double_go=True)
@@ -506,7 +506,7 @@ class Cards(unittest.TestCase):
         a.pos = 38
         act(g, a, "end_turn")
         g.turn = 0
-        roll(g, a, 1, 2)  # passes GO, lands on Mediterranean: a later payment, not the card's
+        roll(g, a, 1, 2)  # passes Start, lands on Mediterranean: a later payment, not the card's
         go = g.flows[-1]
         self.assertEqual((go["from"], go["to"], go["amount"], go["go"], go["card"]), (None, a.id, 200, True, None))
 
