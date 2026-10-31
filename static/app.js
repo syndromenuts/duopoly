@@ -273,7 +273,7 @@ function renderLobby() {
 const JAIL_BARS = `<svg class="bars" viewBox="0 0 40 40"><path d="M6.75 0v40M15 0v40M23.25 0v40"/>
   <rect class="lock" x="30" y="15" width="10" height="12" rx="1.5"/><path class="keyhole" d="M35 18.5a1.8 1.8 0 1 1 0 3.6a1.8 1.8 0 1 1 0-3.6M34.2 21.5h1.6l.6 3.5h-2.8z"/></svg>`;
 
-// Pictures for the middle of the Chance, Community Chest, tax, station, utility, Car Park and Police Station squares.
+// Pictures for the middle of the Mystery, Treasure, tax, station, utility, Car Park and Police Station squares.
 const SQUARE_ICONS = {
   chance: `<svg class="icon" viewBox="0 0 24 24"><path d="M8 8.5a4 4 0 1 1 5.6 3.7c-1 .45-1.6 1.3-1.6 2.3v1.5"/><circle class="fill" cx="12" cy="19.5" r="1.4"/></svg>`,
   chest: `<img class="icon" src="images/chest.png" alt="">`,
@@ -342,7 +342,7 @@ function renderBoard() {
 }
 
 const CARD_EASE = "cubic-bezier(.65, 0, .35, 1)"; // ease in and out, firmer than the CSS keyword
-const cardHtml = (c) => `<div class="hd">${c.deck === "chance" ? "CHANCE" : '<img src="images/chest.png" alt="">COMMUNITY CHEST'}</div><div class="tx"><p>${esc(c.text)}</p></div>`;
+const cardHtml = (c) => `<div class="hd">${c.deck === "chance" ? "MYSTERY" : '<img src="images/chest.png" alt="">TREASURE'}</div><div class="tx"><p>${esc(c.text)}</p></div>`;
 
 // Each deck shows the front of the latest card from it that finished its flight this turn.
 function renderDecks() {
@@ -458,7 +458,7 @@ function cellCenter(pos, jailed = false) {
 
 // Replays the server's move list with a floating token: hop space by space for
 // walks, fly in an arc for jumps (e.g. to Jail). Cards drawn on the way are
-// shown as the token lands on each Chance / Community Chest space.
+// shown as the token lands on each Mystery / Treasure space.
 async function animateMoves(moves, cards = [], flows = []) {
   const run = (animateMoves.run = {}); // a newer roll cancels this one
   animating = true;
@@ -993,7 +993,7 @@ function deedHtml(pos, bare = false, pad = false) {
     html += `<div class="hint">Rent 4× the dice, 10× with both utilities</div>`;
   } else {
     html += `<div class="hint">${{ go: "Collect $200 salary as you pass.", jail: "Just visiting, or in Jail.", parking: S.rules.free_parking ? `Collect the pot ($${S.pot}).` : "Nothing happens here.",
-      gotojail: "Go directly to Jail.", chance: "Draw a Chance card.", chest: "Draw a Community Chest card.", tax: `Pay $${sp.amount}.` }[sp.type] || ""}</div>`;
+      gotojail: "Go directly to Jail.", chance: "Draw a Mystery card.", chest: "Draw a Treasure card.", tax: `Pay $${sp.amount}.` }[sp.type] || ""}</div>`;
   }
   // Button rows: build alone, then mortgage beside selling.
   let acts = "", build = "", sell = "";

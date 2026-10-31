@@ -287,7 +287,7 @@ class Game:
         text, eff = DECKS[kind][idx]
         self.card_id += 1
         self.drawn.append({"id": self.card_id, "deck": kind, "text": text, "player": p.id})
-        self.say(f"{p.name} drew {'Chance' if kind == 'chance' else 'Community Chest'}: {text}")
+        self.say(f"{p.name} drew {'Mystery' if kind == 'chance' else 'Treasure'}: {text}")
         if eff[0] == "jailfree":
             p.cards.append(kind)
         else:

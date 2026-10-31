@@ -41,7 +41,7 @@ podman run -d --name duopoly -p 8000:8000 duopoly
   - Get out by paying $50, using a Get Out of Jail Free card, or rolling doubles (3 tries).
   - After a third failed roll you pay $50 and move.
   - You still collect rent while in Jail.
-- Chance and Community Chest use the 16 standard cards each. Get Out of Jail Free cards can be traded.
+- Mystery and Treasure squares use the 16 standard cards each. Get Out of Jail Free cards can be traded.
 - Trading: offer any mix of cash, properties (groups without buildings) and jail cards, to any player at any time except during an auction. The other player can accept, reject or counter.
 - Debt and bankruptcy:
   - If you can't pay, you raise money by selling, mortgaging or trading. The debt is paid automatically once you have the cash.

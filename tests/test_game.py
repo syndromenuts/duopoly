@@ -109,7 +109,7 @@ class Movement(unittest.TestCase):
     def test_doubles_roll_again_and_three_doubles_jail(self):
         g, (a, b, c) = new_game()
         g.decks["chest"] = [1] + [i for i in g.decks["chest"] if i != 1]  # bank error, harmless
-        roll(g, a, 1, 1)  # 2 Community Chest
+        roll(g, a, 1, 1)  # 2 Treasure
         self.assertEqual(g.stage, "roll")
         roll(g, a, 2, 2)  # 15,777.7 Yen (6)
         resolve_buy(g)
@@ -122,7 +122,7 @@ class Movement(unittest.TestCase):
     def test_passing_go(self):
         g, (a, b, c) = new_game()
         a.pos = 38
-        roll(g, a, 1, 3)  # -> 2 (Community Chest), passes Start
+        roll(g, a, 1, 3)  # -> 2 (Treasure), passes Start
         self.assertIn("P0 collected $200 for passing Start.", g.log)
 
     def test_double_go_house_rule(self):
@@ -490,7 +490,7 @@ class Cards(unittest.TestCase):
         for kind, idx in (("chance", 9), ("chest", chest)):
             g.decks[kind].remove(idx)
             g.decks[kind].insert(0, idx)
-        roll(g, a, 3, 4)  # Chance at 36 sends a back 3 to Community Chest at 33
+        roll(g, a, 3, 4)  # Mystery at 36 sends a back 3 to Treasure at 33
         self.assertEqual([d["deck"] for d in g.drawn], ["chance", "chest"])
         self.assertLess(g.drawn[0]["id"], g.drawn[1]["id"])
         resolve_buy(g)
@@ -525,7 +525,7 @@ class Cards(unittest.TestCase):
         self.assertEqual((a.cash, b.cash, c.cash), (1500, 1500, 1500))
 
     def birthday(self, n=4):
-        """P0 lands on Community Chest and draws the birthday card while everyone else is short."""
+        """P0 lands on Treasure and draws the birthday card while everyone else is short."""
         g, ps = new_game(n)
         a, others = ps[0], ps[1:]
         for o in others:
@@ -534,7 +534,7 @@ class Cards(unittest.TestCase):
         g.decks["chest"].remove(idx)
         g.decks["chest"].insert(0, idx)
         a.pos = 29
-        roll(g, a, 1, 3)  # Community Chest at 33
+        roll(g, a, 1, 3)  # Treasure at 33
         self.assertEqual([d["debtor"] for d in g.debts], [o.id for o in others])
         return g, a, others
 
