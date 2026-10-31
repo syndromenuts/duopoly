@@ -4,7 +4,9 @@ import os
 import queue
 import signal
 import threading
+import time
 import urllib.parse
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from board import board_data
@@ -18,7 +20,8 @@ TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=u
 GAME = Game(dev=os.environ.get("DEV") == "1")
 LOCK = threading.Lock()
 SUBSCRIBERS = set()
-BOARD_JSON = json.dumps(board_data()).encode()
+BOARD_JSON = json.dumps(board_data()).encode()  # the Yen square's live name comes with the state
+YEN_URL = "https://api.frankfurter.dev/v1/latest?from=USD&to=JPY"  # ECB rates, updated each working day
 
 
 def broadcast():
@@ -99,12 +102,27 @@ class Handler(BaseHTTPRequestHandler):
                 broadcast()
 
 
+def refresh_yen():
+    """Keep the Yen square's name on the real USD→JPY rate, pushing changes mid-game."""
+    while True:
+        try:
+            with urllib.request.urlopen(YEN_URL, timeout=5) as r:
+                rate = float(json.load(r)["rates"]["JPY"])
+            with LOCK:
+                if GAME.set_yen_rate(rate):
+                    broadcast()
+        except Exception as e:  # offline or bad reply: keep the current name, try again later
+            print(f"Could not fetch the USD→JPY rate: {e}", flush=True)
+        time.sleep(600)
+
+
 def main():
     port = int(os.environ.get("PORT", "8000"))
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     server.daemon_threads = True
     # As PID 1 in a container, SIGTERM is ignored unless handled; treat it like Ctrl+C
     signal.signal(signal.SIGTERM, signal.default_int_handler)
+    threading.Thread(target=refresh_yen, daemon=True).start()
     print(f"Duopoly running on http://0.0.0.0:{port}{' (dev mode)' if GAME.dev else ''}", flush=True)
     try:
         server.serve_forever()

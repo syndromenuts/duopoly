@@ -6,6 +6,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const PIPS = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
 
 let BOARD = null;
+const YEN = 6; // this square's name follows the exchange rate, sent with each state
 let S = null; // game state on screen
 let held = null; // newer state waiting for the roll on screen to finish playing out
 let receivedAt = 0;
@@ -56,6 +57,7 @@ function connect() {
   events = new EventSource("/events?token=" + encodeURIComponent(token));
   events.onmessage = (e) => {
     const next = JSON.parse(e.data);
+    BOARD.spaces[YEN].name = next.yen_name;
     receivedAt = Date.now();
     if (!revealed) revealed = new Set(next.drawn.map((c) => c.id)); // cards drawn before we connected skip the show
     if (!flowsShown) flowsShown = new Set(next.flows.map((f) => f.id)); // so do payments

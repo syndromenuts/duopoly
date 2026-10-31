@@ -111,7 +111,7 @@ class Movement(unittest.TestCase):
         g.decks["chest"] = [1] + [i for i in g.decks["chest"] if i != 1]  # bank error, harmless
         roll(g, a, 1, 1)  # 2 Treasure
         self.assertEqual(g.stage, "roll")
-        roll(g, a, 2, 2)  # 15,777.7 Yen (6)
+        roll(g, a, 2, 2)  # Yen square (6)
         resolve_buy(g)
         self.assertEqual(g.stage, "roll")
         roll(g, a, 3, 3)
@@ -762,6 +762,18 @@ class Bankruptcy(unittest.TestCase):
         b.away_since = time.time() - 500
         act(g, a, "kick", id=b.id)
         self.assertTrue(b.bankrupt)
+
+
+class YenRate(unittest.TestCase):
+    def test_rate_renames_square_mid_game(self):
+        old = SPACES[6]["name"]
+        self.addCleanup(SPACES[6].__setitem__, "name", old)
+        g, _ = new_game()
+        self.assertTrue(g.set_yen_rate(150.0))
+        self.assertEqual(SPACES[6]["name"], "15,000.0 Yen")
+        self.assertEqual(g.state()["yen_name"], "15,000.0 Yen")
+        self.assertIn("$100 is now worth 15,000.0 Yen.", g.log)
+        self.assertFalse(g.set_yen_rate(150.0))
 
 
 class Groups(unittest.TestCase):

@@ -9,7 +9,7 @@ import random
 import secrets
 import time
 
-from board import DECKS, GROUPS, JAIL, JAILFREE_INDEX, SPACES
+from board import DECKS, GROUPS, JAIL, JAILFREE_INDEX, SPACES, YEN, yen_name
 
 TOKEN_COLORS = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#42d4f4", "#f032e6", "#9a6324"]
 DEFAULT_RULES = {"free_parking": False, "double_go": False, "jail_no_rent": False, "start_cash": 1500}
@@ -106,6 +106,16 @@ class Game:
         self.counter = None  # {"from", "to"} while a trade's receiver drafts a counter offer to its proposer
         self.winner = None
         self.drawn = []  # cards drawn this turn, shown until the turn ends
+
+    def set_yen_rate(self, rate):
+        """Rename the Yen square for a new USD→JPY rate. Returns whether the name changed."""
+        name = yen_name(rate)
+        if name == SPACES[YEN]["name"]:
+            return False
+        SPACES[YEN]["name"] = name
+        if self.phase == "playing":
+            self.say(f"$100 is now worth {name}.")
+        return True
 
     def say(self, msg):
         self.log.append(msg)
@@ -966,7 +976,7 @@ class Game:
 
     def state(self):
         return {
-            "phase": self.phase, "rules": self.rules,
+            "phase": self.phase, "rules": self.rules, "yen_name": SPACES[YEN]["name"],
             "players": [p.public() for p in self.players.values()],
             "order": self.order, "turn": self.order[self.turn] if self.order else None,
             "stage": self.stage, "dice": self.dice, "roll_id": self.roll_id, "moves": self.moves, "doubles": self.doubles, "blocked": self.blocked() if self.phase == "playing" else False,

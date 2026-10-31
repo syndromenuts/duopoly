@@ -18,6 +18,11 @@ def simple(name, kind, **extra):
     return {"name": name, "type": kind, **extra}
 
 
+def yen_name(rate):
+    """The Yen square is named after what its $100 price buys at the USD→JPY rate."""
+    return f"{100 * rate:,.1f} Yen"
+
+
 SPACES = [
     simple("Start", "go"),
     street("Nintendo Switch Game", "brown", 60, [2, 10, 30, 90, 160, 250], 50),
@@ -25,7 +30,7 @@ SPACES = [
     street("iPhone Case", "brown", 60, [4, 20, 60, 180, 320, 450], 50),
     simple("Income Tax", "tax", amount=200),
     station("South Station"),
-    street("15,777.7 Yen", "lightblue", 100, [6, 30, 90, 270, 400, 550], 50),
+    street(yen_name(157.777), "lightblue", 100, [6, 30, 90, 270, 400, 550], 50),
     simple("Mystery", "chance"),
     street("1080p IPS Monitor", "lightblue", 100, [6, 30, 90, 270, 400, 550], 50),
     street("Toys R Us", "lightblue", 120, [8, 40, 100, 300, 450, 600], 50),
@@ -73,6 +78,7 @@ GROUP_COLORS = {
 }
 
 JAIL = 10
+YEN = 6  # renamed live as the exchange rate moves
 
 # Card effects:
 #   ("advance", pos)          move forward to pos (collect the Start salary if passed)
