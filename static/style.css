@@ -56,6 +56,14 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 
 #lobby { max-width: 520px; margin: 0 auto; padding: 0 16px 16px; }
 #lobby-players li { padding: 4px 0; }
+#join button { display: flex; align-items: center; justify-content: center; gap: 16px; width: 100%; margin: 12px 0 4px; padding: 10px 24px; font-size: 24px; font-weight: bold; letter-spacing: .2em; text-transform: uppercase; color: #e0b81f;
+  background: none; border: 6px double #e0b81f; } /* a big gilded double frame */
+#join button::before, #join button::after { content: ""; flex: none; width: 2.4em; height: 2.4em; background: currentColor;
+  -webkit-mask: url(/images/pointing-hand.png) center / contain no-repeat; mask: url(/images/pointing-hand.png) center / contain no-repeat; transition: transform .2s; } /* the black artwork, inked in the button's gold */
+#join button::after { transform: scaleX(-1); } /* both hands point at the word */
+#join button:hover::before, #join button:focus-visible::before { transform: translateX(-12px); }
+#join button:hover::after, #join button:focus-visible::after { transform: translateX(12px) scaleX(-1); } /* and draw back from it on hover */
+@media (prefers-reduced-motion: reduce) { #join button::before, #join button::after { transition: none; } }
 
 #game { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px; align-items: flex-start; justify-content: center; }
 #board { --B: min(96vw, 94vh, 860px); position: relative; display: grid; grid-template-columns: 1.4fr repeat(9, 1fr) 1.4fr; grid-template-rows: 1.4fr repeat(9, 1fr) 1.4fr;
