@@ -264,10 +264,10 @@ function renderLobby() {
   tint();
   $("join-colors").querySelectorAll("input").forEach((el) => (el.onchange = () => { joinColor = el.value; tint(); }));
   $("lobby-players").innerHTML = S.players.map((p) => `<li class="${p.ready ? "is-ready" : "not-ready"}">
-    <span class="dot" style="background:${p.color}"></span>
+    <span class="strip" style="background:${p.color}"></span>
     <span class="name">${esc(p.name)}</span>
-    <span class="ready-tag">${p.ready ? "READY" : "NOT READY"}</span>
-    ${p.connected ? "" : `<em>(disconnected)</em> ${joined && p.id !== myId ? btn("Remove", "kick", { id: p.id }, "secondary") : ""}`}</li>`).join("") || "<li>No one yet.</li>";
+    ${p.connected ? "" : `<em>(disconnected)</em> ${joined && p.id !== myId ? btn("Remove", "kick", { id: p.id }, "secondary") : ""}`}
+    <span class="ready-tag">${p.ready ? "READY" : "NOT READY"}</span></li>`).join("") || "<li>No one yet.</li>";
   if (joined) {
     const rb = $("ready-btn"), ready = me().ready;
     rb.textContent = ready ? "Not ready" : "I'm ready";
