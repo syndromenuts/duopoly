@@ -47,8 +47,8 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; border: 1px solid rgba(255,255,255,.35); }
 .chip { display: inline-block; width: 10px; height: 14px; margin-right: 2px; border: 1px solid rgba(255,255,255,.25); vertical-align: middle; }
 .chip.m { opacity: .35; }
-.swatches { margin: 8px 0; }
-.swatches label { display: inline-block; margin: 0 4px 0 0; }
+.swatches { margin: 8px 0; text-align: center; }
+.swatches label { display: inline-block; margin: 0 2px; } /* even on both sides, so the row sits dead centre */
 .swatches input { display: none; }
 .swatches span { display: inline-block; width: 26px; height: 26px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
 .swatches input:checked + span { border-color: var(--fg); }
