@@ -80,12 +80,13 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #leave-btn:hover { color: var(--fg); text-decoration: underline; }
 #players-card { background: none; box-shadow: none; } /* the player list sits straight on the wood too */
 /* Before you join, the title, room and join form fill the first screen, the form dead centre (equal rows above and below it):
-   the title at the top, the room sitting just above the form, the rules beneath. */
+   the title at the top, the room sitting just above the form. The rules box stays hidden until you join. */
 #lobby-top:has(> #join-form:not([hidden])) { display: grid; grid-template-rows: 1fr auto 1fr; min-height: 100vh; min-height: 100svh; }
 #lobby-top:has(> #join-form:not([hidden])) #lobby-head { display: flex; flex-direction: column; }
 #lobby-top:has(> #join-form:not([hidden])) #players-card { margin-top: auto; }
 #lobby-top:has(> #join-form:not([hidden])) #players-card .hint { display: none; } /* the start rule only matters once you have joined */
 #lobby-top > #join-form { margin-bottom: 0; } /* no card margin nudging it off centre */
+#lobby:has(#join-form:not([hidden])) > #lobby-top ~ .card { display: none; } /* no rules box before you join */
 #join-form { background: none; box-shadow: none; } /* the join form sits straight on the wood, no card behind it */
 #join-name { display: block; width: 100%; max-width: 320px; margin: 0 auto; padding: 12px 16px; font-size: 22px; text-align: center; border: 2px solid var(--pick, #e0b81f); background: var(--bg); } /* the first thing to fill in, framed in the color you picked */
 #join-name::placeholder { color: var(--muted); font-style: italic; }
