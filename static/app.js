@@ -268,7 +268,11 @@ function renderLobby() {
     <span class="name">${esc(p.name)}</span>
     <span class="ready-tag">${p.ready ? "READY" : "NOT READY"}</span>
     ${p.connected ? "" : `<em>(disconnected)</em> ${joined && p.id !== myId ? btn("Remove", "kick", { id: p.id }, "secondary") : ""}`}</li>`).join("") || "<li>No one yet.</li>";
-  if (joined) $("ready-btn").textContent = me().ready ? "Not ready" : "I'm ready";
+  if (joined) {
+    const rb = $("ready-btn"), ready = me().ready;
+    rb.textContent = ready ? "Not ready" : "I'm ready";
+    rb.className = ready ? "unready" : "ready"; // green to get ready, red to back out
+  }
   document.querySelectorAll("[data-rule]").forEach((el) => { el.checked = !!S.rules[el.dataset.rule]; el.disabled = !joined; });
   const cash = $("start-cash");
   if (document.activeElement !== cash) cash.value = S.rules.start_cash;

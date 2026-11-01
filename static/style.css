@@ -65,6 +65,20 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #lobby-players .is-ready .ready-tag { color: #5fd47f; }
 #lobby-players em { font-size: .8em; }
 #lobby-players li:not([class]) { grid-column: 1 / -1; } /* "No one yet." spans the whole row */
+#lobby-me:not([hidden]) { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 14px; } /* the big ready button, centred, with Leave tucked beneath */
+#ready-btn { display: flex; align-items: center; justify-content: center; gap: 14px; min-width: 60%; padding: 10px 24px; font-size: 24px; font-weight: bold; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--act); background: color-mix(in srgb, var(--act) 18%, transparent); border: 6px double var(--act); } /* framed like the Join button, in the action's color */
+#ready-btn.ready { --act: #5fd47f; }
+#ready-btn.unready { --act: #ff6b5b; }
+#ready-btn::before, #ready-btn::after { content: ""; flex: none; width: 1.6em; height: 1.6em; background: currentColor;
+  -webkit-mask: url(/images/pointing-hand.png) center / contain no-repeat; mask: url(/images/pointing-hand.png) center / contain no-repeat; transition: transform .2s; }
+#ready-btn::after { transform: scaleX(-1); } /* both hands point at the word */
+#ready-btn:hover::before, #ready-btn:focus-visible::before { transform: translateX(-12px); }
+#ready-btn:hover::after, #ready-btn:focus-visible::after { transform: translateX(12px) scaleX(-1); }
+@media (prefers-reduced-motion: reduce) { #ready-btn::before, #ready-btn::after { transition: none; } }
+#leave-btn { background: none; color: var(--muted); }
+#leave-btn:hover { color: var(--fg); text-decoration: underline; }
+#players-card { background: none; box-shadow: none; } /* the player list sits straight on the wood too */
 #join-form { background: none; box-shadow: none; } /* the join form sits straight on the wood, no card behind it */
 #join-name { display: block; width: 100%; padding: 12px 16px; font-size: 22px; text-align: center; border: 2px solid var(--pick, #e0b81f); background: var(--bg); } /* the first thing to fill in, framed in the color you picked */
 #join-name::placeholder { color: var(--muted); font-style: italic; }
