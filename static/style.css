@@ -87,7 +87,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #lobby-top:has(> #join-form:not([hidden])) #players-card .hint { display: none; } /* the start rule only matters once you have joined */
 #lobby-top > #join-form { margin-bottom: 0; } /* no card margin nudging it off centre */
 #join-form { background: none; box-shadow: none; } /* the join form sits straight on the wood, no card behind it */
-#join-name { display: block; width: 100%; padding: 12px 16px; font-size: 22px; text-align: center; border: 2px solid var(--pick, #e0b81f); background: var(--bg); } /* the first thing to fill in, framed in the color you picked */
+#join-name { display: block; width: 100%; max-width: 320px; margin: 0 auto; padding: 12px 16px; font-size: 22px; text-align: center; border: 2px solid var(--pick, #e0b81f); background: var(--bg); } /* the first thing to fill in, framed in the color you picked */
 #join-name::placeholder { color: var(--muted); font-style: italic; }
 #join-name:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--pick, #e0b81f) 35%, transparent); }
 #join button { display: flex; align-items: center; justify-content: center; gap: 12px; width: fit-content; margin: 12px auto 4px; padding: 4px 18px; font-size: 16px; font-weight: bold; letter-spacing: .2em; text-transform: uppercase; color: #e0b81f;
