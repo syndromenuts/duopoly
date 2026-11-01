@@ -56,12 +56,13 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 
 #lobby { max-width: 520px; margin: 0 auto; padding: 0 16px 16px; }
 #lobby-players li { padding: 4px 0; }
+#join-form { background: none; box-shadow: none; } /* the join form sits straight on the wood, no card behind it */
 #join-name { display: block; width: 100%; padding: 12px 16px; font-size: 22px; text-align: center; border: 2px solid var(--pick, #e0b81f); background: var(--bg); } /* the first thing to fill in, framed in the color you picked */
 #join-name::placeholder { color: var(--muted); font-style: italic; }
 #join-name:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--pick, #e0b81f) 35%, transparent); }
-#join button { display: flex; align-items: center; justify-content: center; gap: 16px; width: 100%; margin: 12px 0 4px; padding: 10px 24px; font-size: 24px; font-weight: bold; letter-spacing: .2em; text-transform: uppercase; color: #e0b81f;
-  background: none; border: 6px double #e0b81f; } /* a big gilded double frame */
-#join button::before, #join button::after { content: ""; flex: none; width: 2.4em; height: 2.4em; background: currentColor;
+#join button { display: flex; align-items: center; justify-content: center; gap: 12px; width: fit-content; margin: 12px auto 4px; padding: 4px 18px; font-size: 16px; font-weight: bold; letter-spacing: .2em; text-transform: uppercase; color: #e0b81f;
+  background: none; border: 6px double #e0b81f; } /* a gilded double frame, smaller than the name box above it */
+#join button::before, #join button::after { content: ""; flex: none; width: 1.8em; height: 1.8em; background: currentColor;
   -webkit-mask: url(/images/pointing-hand.png) center / contain no-repeat; mask: url(/images/pointing-hand.png) center / contain no-repeat; transition: transform .2s; } /* the black artwork, inked in the button's gold */
 #join button::after { transform: scaleX(-1); } /* both hands point at the word */
 #join button:hover::before, #join button:focus-visible::before { transform: translateX(-12px); }
