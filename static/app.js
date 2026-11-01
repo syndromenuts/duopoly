@@ -260,7 +260,9 @@ function renderLobby() {
   if (!joinColor || taken.includes(joinColor)) joinColor = S.colors.find((c) => !taken.includes(c));
   $("join-colors").innerHTML = S.colors.map((c) =>
     `<label><input type="radio" name="color" value="${c}"${c === joinColor ? " checked" : ""}${taken.includes(c) ? " disabled" : ""}><span style="background:${c}"></span></label>`).join("");
-  $("join-colors").querySelectorAll("input").forEach((el) => (el.onchange = () => (joinColor = el.value)));
+  const tint = () => $("join-name").style.setProperty("--pick", joinColor || ""); // the name box wears the chosen color
+  tint();
+  $("join-colors").querySelectorAll("input").forEach((el) => (el.onchange = () => { joinColor = el.value; tint(); }));
   $("lobby-players").innerHTML = S.players.map((p) => `<li><span class="dot" style="background:${p.color}"></span> ${esc(p.name)}
     ${p.ready ? "✅ ready" : "⏳ not ready"} ${p.connected ? "" : `<em>(disconnected)</em> ${joined && p.id !== myId ? btn("Remove", "kick", { id: p.id }, "secondary") : ""}`}</li>`).join("") || "<li>No one yet.</li>";
   if (joined) $("ready-btn").textContent = me().ready ? "Not ready" : "I'm ready";
