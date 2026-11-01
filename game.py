@@ -14,7 +14,7 @@ from board import DECKS, GROUPS, JAIL, JAILFREE_INDEX, SPACES, YEN, yen_name
 TOKEN_COLORS = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#42d4f4", "#f032e6", "#9a6324"]
 DEFAULT_RULES = {"free_parking": False, "double_go": False, "jail_no_rent": False, "start_cash": 1500}
 MAX_PLAYERS = 8
-KICK_AFTER = {"lobby": 15, "playing": 120}
+KICK_AFTER = {"lobby": 15, "order": 15, "playing": 120}
 
 
 class GameError(Exception):
@@ -50,6 +50,7 @@ class Player:
         self.pending_mortgages = []  # mortgaged properties received; owner must pay off or pay 10%
         self.pending_build = None  # "house"/"hotel" won in a shortage auction, still to place
         self.reset_vote = False
+        self.order_roll = None  # the pair of dice rolled for turn order, once rolled
 
     def public(self):
         return {
@@ -59,7 +60,7 @@ class Player:
             "cash": self.cash, "pos": self.pos, "in_jail": self.in_jail, "jail_turns": self.jail_turns,
             "cards": len(self.cards), "bankrupt": self.bankrupt,
             "pending_mortgages": self.pending_mortgages, "pending_build": self.pending_build,
-            "reset_vote": self.reset_vote,
+            "reset_vote": self.reset_vote, "order_roll": self.order_roll,
         }
 
 
@@ -91,6 +92,7 @@ class Game:
         self.pot = 0
         self.decks = {k: self.rng.sample(range(len(d)), len(d)) for k, d in DECKS.items()}
         self.order = []
+        self.order_plan = {}  # player id -> the pair they will roll for turn order, kept secret until rolled
         self.turn = 0
         self.stage = "roll"  # roll | buy | auction | done
         self.dice = None
@@ -122,12 +124,38 @@ class Game:
         del self.log[:-200]
 
     def start(self):
+        """Everyone is ready: each player rolls two dice, and the highest total goes first.
+
+        The order is drawn now and every player gets a different total to match it, so there are
+        never ties; the rolls only reveal it. Up to 8 players fit in the 11 totals from 2 to 12.
+        """
         self.reset_board()
-        self.phase = "playing"
-        self.order = list(self.players)
-        self.rng.shuffle(self.order)
+        self.phase = "order"
         for p in self.players.values():
             p.reset_for_game(self.rules["start_cash"])
+        order = list(self.players)
+        self.rng.shuffle(order)
+        totals = sorted(self.rng.sample(range(2, 13), len(order)), reverse=True)
+        for pid, total in zip(order, totals):
+            d1 = self.rng.randint(max(1, total - 6), min(6, total - 1))
+            self.order_plan[pid] = [d1, total - d1]
+        self.say("Roll the dice for turn order. Highest goes first.")
+
+    def a_order_roll(self, p, data):
+        if self.phase != "order":
+            raise GameError("It is not time to roll for turn order.")
+        if p.order_roll is not None:
+            raise GameError("You have already rolled.")
+        p.order_roll = self.order_plan[p.id]
+        self.say(f"{p.name} rolled {sum(p.order_roll)} for turn order.")
+        self.check_order()
+
+    def check_order(self):
+        """Once everyone has rolled, play begins, highest total first."""
+        if self.phase != "order" or any(p.order_roll is None for p in self.players.values()):
+            return
+        self.order = sorted(self.players, key=lambda i: -sum(self.players[i].order_roll))
+        self.phase = "playing"
         names = ", ".join(self.players[i].name for i in self.order)
         self.say(f"Game started. Turn order: {names}.")
 
@@ -843,6 +871,11 @@ class Game:
         else:
             del self.players[target.id]
             self.say(f"{target.name} was removed.")
+            if self.phase == "order":
+                if len(self.players) < 2:
+                    self.back_to_lobby()
+                else:
+                    self.check_order()
 
     # ------------------------------------------------------------- the lobby
 

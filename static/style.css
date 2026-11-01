@@ -70,6 +70,37 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #lobby-players em { font-size: .8em; color: var(--cell-muted); }
 #lobby-players li button { margin: 0; padding: 2px 8px; font-size: .8em; }
 #lobby-players li:not([class]) { grid-column: 1 / -1; align-self: center; padding: 0; background: none; border: 0; color: var(--muted); } /* "No one yet." spans the whole row */
+/* Rolling for turn order: a die above each player's card, everyone's results live. */
+html:has(#game:not([hidden])) { scrollbar-gutter: stable; } /* the scroll bar coming and going as the side panel grows mustn't nudge the board or popups */
+/* The popup is sized by its grid of players alone, and every part keeps a fixed height, so nothing shifts as rolls come in. */
+.modal > .card.order-card { max-width: none; width: fit-content; text-align: center; }
+#order-title, #order-hint { contain: inline-size; } /* wrap to the players' width rather than widen the popup */
+#order-title { margin: 4px 0 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#order-hint { min-height: 2.8em; margin-top: 10px; }
+#order-players { display: grid; grid-template-columns: repeat(var(--cols), 150px); justify-content: center; gap: 18px 14px; min-width: 400px; }
+#order-players li { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#order-players .od { display: flex; align-items: center; justify-content: center; gap: .15em; height: 76px; font-size: 42px; line-height: 0; transition: font-size .2s ease-out; }
+#order-players .od.big { font-size: 66px; } /* grows while rolling and just after, like the board's dice */
+#order-players .od.blank .die i { visibility: hidden; }
+#order-players .od.blank .die { position: relative; }
+#order-players .od.blank .die::after { content: "?"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .5em; line-height: 1; color: #999; }
+#order-players .od.ready { cursor: pointer; }
+#order-players .od.ready .die { animation: dice-ready 1.4s ease-in-out infinite; }
+#order-players .od.ready:hover .die, #order-players .od.ready:focus-visible .die { transform: scale(1.08); }
+#order-players .od.ready:focus-visible { outline: none; }
+@media (prefers-reduced-motion: reduce) { #order-players .od { transition: none; } #order-players .od.ready .die { animation: none; } }
+#order-players .ocard { align-self: stretch; display: flex; flex-direction: column; overflow: hidden; background: var(--cell); color: var(--cell-fg);
+  border: 1px solid var(--cell-line); border-radius: var(--radius); }
+#order-players .ocard .strip { height: 22px; border-bottom: 1px solid var(--cell-line); }
+#order-players .ocard .name { padding: 6px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#order-players .oinfo { height: 48px; } /* room for a place and a Remove button, filled or not */
+#order-players .ostat { min-height: 1.4em; font-size: 13px; color: var(--muted); }
+#order-players .ostat.mine { color: #f6c90e; font-weight: bold; }
+#order-players .ostat.place { color: var(--fg); font-weight: bold; font-size: 16px; }
+#order-players .first .ostat.place { color: #f6c90e; }
+#order-players .first .ocard { box-shadow: 0 0 12px 3px rgba(246,201,14,.7); }
+#order-players .kick { font-size: 11px; color: var(--muted); }
+#order-players li button { margin: 0; padding: 2px 8px; font-size: .8em; }
 #lobby-me:not([hidden]) { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 14px; } /* the big ready button, centred, with Leave tucked beneath */
 #ready-btn { display: flex; align-items: center; justify-content: center; gap: 14px; min-width: 60%; padding: 10px 24px; font-size: 24px; font-weight: bold; letter-spacing: .15em; text-transform: uppercase;
   color: var(--act); background: color-mix(in srgb, var(--act) 18%, transparent); border: 6px double var(--act); } /* framed like the Join button, in the action's color */
@@ -189,12 +220,12 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #center { grid-column: 2 / 11; grid-row: 2 / 11; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px; color: var(--cell-fg); }
 #center .dice { display: flex; justify-content: center; gap: .2em; font-size: clamp(30px, 6vw, 64px); height: 1em; margin: 8px 0 14px; transition: font-size .2s ease-out; }
 #center .dice.big { font-size: clamp(60px, 13vw, 140px); }
-#center .die { display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); width: 1em; height: 1em; padding: .12em;
+.die { display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); width: 1em; height: 1em; padding: .12em;
   box-sizing: border-box; background: linear-gradient(145deg, #fff, #e9e9e4); border: 1px solid #bbb; border-radius: .2em;
   box-shadow: 0 .05em .12em rgba(0,0,0,.35), inset 0 -.03em .05em rgba(0,0,0,.12); }
-#center .die[hidden] { display: none; }
-#center .die i { width: .17em; height: .17em; place-self: center; border-radius: 50%; visibility: hidden; }
-#center .die i.on { visibility: visible; background: #222; box-shadow: inset 0 .02em .03em rgba(255,255,255,.25); }
+.die[hidden] { display: none; }
+.die i { width: .17em; height: .17em; place-self: center; border-radius: 50%; visibility: hidden; }
+.die i.on { visibility: visible; background: #222; box-shadow: inset 0 .02em .03em rgba(255,255,255,.25); }
 #center .dice.ready { cursor: pointer; }
 #center .dice.ready .die { animation: dice-ready 1.4s ease-in-out infinite; }
 #center .dice.ready:hover .die, #center .dice.ready:focus-visible .die { transform: scale(1.08); }

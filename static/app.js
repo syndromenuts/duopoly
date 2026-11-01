@@ -28,6 +28,12 @@ let animating = false; // a roll is still playing out (token or card), so the re
 let shownCenter = null; // markup last put in the center info
 let revealed = null; // ids of drawn cards that have reached their deck (null until the first state)
 let flowsShown = null; // ids of cash movements already shown in the middle of the board
+let orderShown = {}; // player id -> whether their turn-order roll is on screen; a new one rolls first
+let orderRollUntil = {}; // player id -> when their turn-order die stops tumbling
+let orderBigUntil = {}; // player id -> when their turn-order die shrinks back after a roll
+let orderPending = false; // I clicked my turn-order die and the result hasn't arrived yet
+let orderHoldUntil = 0; // the finished turn order stays up until then, before the board appears
+let lastPhase = null;
 
 // ------------------------------------------------------------------ server
 
@@ -197,6 +203,11 @@ function bindStatic() {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("log-toggle").click(); }
   };
 
+  $("order-players").onkeydown = (e) => {
+    const d = e.target.closest("[data-act]");
+    if ((e.key === "Enter" || e.key === " ") && d) { e.preventDefault(); d.click(); }
+  };
+
   $("dice").onkeydown = (e) => {
     if ((e.key === "Enter" || e.key === " ") && $("dice").dataset.act) { e.preventDefault(); $("dice").click(); }
   };
@@ -212,6 +223,11 @@ function bindStatic() {
     if (b.dataset.act === "close_bankrupt") { if (e.target === b) b.hidden = true; return; } // only a click on the backdrop, not the card
     if (b.dataset.act === "open_debt") { debtHidden = null; return renderDebt(); }
     if (b.dataset.act === "trade_with") { closePlayer(); return openTrade(emptyDraft(data.id)); }
+    if (b.dataset.act === "order_roll") { // one roll per click; the dice roll when the result arrives, and a refused roll makes it clickable again
+      orderPending = true;
+      renderOrder();
+      return send("order_roll").then((r) => { if (!r) { orderPending = false; renderOrder(); } });
+    }
     if (b.dataset.act === "roll") { // the dice or the jail popup's Roll; one roll per click, a refused roll makes the dice clickable again
       setRollable(false);
       const dice = S.dev ? [...$("dev-dice").children].map((el) => (el.value ? Number(el.value) : null)) : null;
@@ -228,16 +244,23 @@ const btn = (label, act, arg, cls = "", disabled = false) =>
 
 function render() {
   if (myId && !me()) setIdentity("", "");
+  if (lastPhase === "order" && S.phase === "playing") { // let the last die land and everyone see the order before the board
+    orderHoldUntil = Date.now() + 3800;
+    setTimeout(() => S && render(), 3850);
+  }
+  lastPhase = S.phase;
   const inGame = S.phase !== "lobby";
   $("lobby").hidden = inGame;
   $("game").hidden = !inGame;
   if (!inGame) {
-    $("offer-modal").hidden = $("player-modal").hidden = $("debt-modal").hidden = $("jail-modal").hidden = $("bankrupt-modal").hidden = true;
+    $("offer-modal").hidden = $("player-modal").hidden = $("debt-modal").hidden = $("jail-modal").hidden = $("bankrupt-modal").hidden = $("order").hidden = true;
     // Everyone sits at $0 in the lobby, so the next game's starting cash counts up from nothing.
     for (const id in tallies) delete tallies[id];
     for (const p of S.players) tallies[p.id] = { from: 0, to: 0, start: -Infinity, shown: 0, done: true };
+    orderShown = {};
     return renderLobby();
   }
+  renderOrder();
   renderBoard();
   renderMe();
   renderBuyOffer();
@@ -277,6 +300,104 @@ function renderLobby() {
   const cash = $("start-cash");
   if (document.activeElement !== cash) cash.value = S.rules.start_cash;
   cash.disabled = !joined;
+}
+
+// ------------------------------------------------------------------ rolling for turn order
+
+const ordinal = (n) => n + ({ 1: "st", 2: "nd", 3: "rd" }[n] || "th");
+
+// A popup over the board while everyone rolls for turn order. Each player's pair of dice sits above
+// their color and name; yours are the button while it's your roll, and everyone's results roll in
+// live, animated like the board's dice. Places only appear once the whole order is settled.
+function renderOrder() {
+  const now = Date.now();
+  const ordering = S.phase === "order" || (S.phase === "playing" && now < orderHoldUntil);
+  $("order").hidden = !ordering;
+  if (!ordering) return;
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  for (const p of S.players) {
+    if (!(p.id in orderShown)) orderShown[p.id] = p.order_roll !== null; // a roll made before we looked skips the show
+    if (p.order_roll !== null && !orderShown[p.id] && !(orderRollUntil[p.id] > now)) {
+      orderBigUntil[p.id] = now + 2200;
+      setTimeout(() => S && renderOrder(), 2250);
+      if (still) orderShown[p.id] = true;
+      else { orderRollUntil[p.id] = now + 700; tumble(); }
+    }
+  }
+  if (me()?.order_roll != null) orderPending = false;
+  const tumbling = (id) => orderRollUntil[id] > now;
+  const final = S.phase === "playing" && !S.players.some((p) => tumbling(p.id));
+  const myRoll = !final && !!me() && me().order_roll === null && !orderPending;
+  $("order-title").textContent = final ? `${player(S.order[0]).name} goes first!` : "Roll for turn order";
+  $("order-hint").textContent = final ? "Get ready…" : myRoll ? "Click your dice to roll them. Highest total goes first." : "Highest total goes first.";
+  // The cards are built once and then updated in place, so a die growing into a roll animates like the board's.
+  const list = $("order-players"), ids = myId + ":" + S.players.map((p) => p.id).join();
+  if (list.dataset.ids !== ids) {
+    list.dataset.ids = ids;
+    const n = S.players.length;
+    list.style.setProperty("--cols", n <= 5 ? n : Math.ceil(n / 2));
+    const die = `<div class="die">${"<i></i>".repeat(9)}</div>`;
+    list.innerHTML = S.players.map((p) => `<li><div id="od-${p.id}" class="od">${die}${die}</div>
+      <div class="ocard"><span class="strip" style="background:${p.color}"></span><span class="name" title="${esc(p.name)}">${esc(p.name)}${p.id === myId ? " (you)" : ""}</span></div>
+      <div class="oinfo"><div class="ostat"></div><div class="kick"></div></div></li>`).join("");
+  }
+  S.players.forEach((p, k) => {
+    const mine = p.id === myId, value = orderShown[p.id] ? p.order_roll : null;
+    let stat, cls = "";
+    if (final) { stat = ordinal(S.order.indexOf(p.id) + 1); cls = "place"; }
+    else if (tumbling(p.id) || (p.order_roll !== null && !orderShown[p.id])) stat = "Rolling…";
+    else if (value) stat = `Rolled ${value[0] + value[1]}`;
+    else if (mine) { stat = "Your roll!"; cls = "mine"; }
+    else stat = "Waiting to roll…";
+    const canRoll = mine && myRoll;
+    const li = list.children[k], od = li.firstElementChild;
+    li.classList.toggle("first", final && S.order[0] === p.id);
+    od.classList.toggle("ready", canRoll);
+    od.classList.toggle("big", orderBigUntil[p.id] > now);
+    if (!tumbling(p.id)) { od.classList.toggle("blank", !value); [...od.children].forEach((d, i) => setDie(d, value ? value[i] : 0)); }
+    if (canRoll) {
+      od.dataset.act = "order_roll";
+      od.setAttribute("role", "button");
+      od.tabIndex = 0;
+      od.title = "Roll your dice";
+    } else if (od.dataset.act) {
+      delete od.dataset.act;
+      od.removeAttribute("role");
+      od.removeAttribute("tabindex");
+      od.removeAttribute("title");
+    }
+    const [st, kick] = li.lastElementChild.children;
+    st.className = `ostat ${cls}`;
+    st.textContent = stat;
+    const html = !p.connected ? `disconnected ${me() && !mine ? btn("Remove", "kick", { id: p.id }, "secondary") : ""}` : "";
+    if (kick.dataset.html !== html) kick.innerHTML = kick.dataset.html = html;
+  });
+}
+
+// Flips the faces of every turn-order die still rolling, as the board's dice do, and reveals each roll as its die stops.
+function tumble() {
+  if (tumble.timer) return;
+  tumble.timer = setInterval(() => {
+    const now = Date.now();
+    let left = false, landed = false;
+    for (const id in orderRollUntil) {
+      if (now < orderRollUntil[id]) {
+        left = true;
+        const d = $("od-" + id);
+        if (d) {
+          for (const die of d.children) setDie(die, 1 + Math.floor(Math.random() * 6));
+          d.classList.remove("blank");
+        }
+      } else {
+        delete orderRollUntil[id];
+        const p = S && player(id);
+        if (p) orderShown[id] = true;
+        landed = true;
+      }
+    }
+    if (!left) { clearInterval(tumble.timer); tumble.timer = null; }
+    if (landed && S) renderOrder();
+  }, 70);
 }
 
 // Three floor-to-ceiling bars and a lock plate with a keyhole, drawn over the inmates. The bars
@@ -412,11 +533,15 @@ async function showCard(c, run, flows) {
   }, () => {});
 }
 
+function setDie(die, v) {
+  [...die.children].forEach((pip, i) => pip.classList.toggle("on", PIPS[v].includes(i)));
+}
+
 function setDice(a, b) {
   [a, b].forEach((v, k) => {
     const die = $("dice").children[k];
     die.hidden = !v;
-    [...die.children].forEach((pip, i) => pip.classList.toggle("on", PIPS[v].includes(i)));
+    setDie(die, v);
   });
 }
 
@@ -868,7 +993,7 @@ function renderCounter(c) {
 function renderPlayers() {
   if (S.phase === "lobby") return renderLobby();
   const elapsed = (Date.now() - receivedAt) / 1000;
-  const order = S.order.map(player);
+  const order = (S.order.length ? S.order : S.players.map((p) => p.id)).map(player); // join order until the turn order is rolled
   // Beside the board in turn order, first player at the top, with whoever is up highlighted.
   $("turns").innerHTML = order.map((p) => {
     const away = Math.round(p.away + elapsed);

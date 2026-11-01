@@ -17,10 +17,18 @@ def new_game(n=3, **rules):
     for p in ps:
         p.conns = 1
         g.act(p.token, "ready", {"ready": True})
+    roll_for_order(g)
     assert g.phase == "playing"
     g.order = [p.id for p in ps]  # deterministic order
     g.turn = 0
     return g, ps
+
+
+def roll_for_order(g):
+    while g.phase == "order":
+        for p in list(g.players.values()):
+            if p.order_roll is None:
+                g.act(p.token, "order_roll", {})
 
 
 def act(g, p, kind, **data):
@@ -54,6 +62,8 @@ class Lobby(unittest.TestCase):
         g.act(a.token, "ready", {"ready": True})
         self.assertEqual(g.phase, "lobby")
         g.act(b.token, "ready", {"ready": True})
+        self.assertEqual(g.phase, "order")
+        roll_for_order(g)
         self.assertEqual(g.phase, "playing")
         self.assertEqual(a.cash, 1500)
 
@@ -72,7 +82,37 @@ class Lobby(unittest.TestCase):
         self.assertFalse(a.ready)
         g.act(a.token, "ready", {"ready": True})
         g.act(b.token, "ready", {"ready": True})
+        roll_for_order(g)
         self.assertEqual(a.cash, 2000)
+
+    def test_order_rolls_never_tie_and_match_the_order(self):
+        firsts = set()
+        for seed in range(40):
+            g = Game(random.Random(seed))
+            ps = [g.join({"name": f"P{i}"}) for i in range(8)]
+            for p in ps:
+                g.act(p.token, "ready", {"ready": True})
+            self.assertEqual(g.order, [])  # the planned order isn't given away before the rolls
+            self.assertTrue(all(p["order_roll"] is None for p in g.state()["players"]))
+            for p in ps:
+                g.act(p.token, "order_roll", {})
+            self.assertEqual(g.phase, "playing")
+            totals = [sum(g.players[i].order_roll) for i in g.order]
+            self.assertEqual(totals, sorted(set(totals), reverse=True))  # all different, highest first
+            for p in ps:
+                self.assertTrue(all(1 <= d <= 6 for d in p.order_roll))
+            self.assertEqual(g.current().id, g.order[0])
+            firsts.add(g.players[g.order[0]].name)
+        self.assertGreater(len(firsts), 3)  # who goes first is random
+
+    def test_order_roll_only_once_per_round(self):
+        g = Game(random.Random(1))
+        a, b = (g.join({"name": n}) for n in "AB")
+        for p in (a, b):
+            g.act(p.token, "ready", {"ready": True})
+        g.act(a.token, "order_roll", {})
+        with self.assertRaises(GameError):
+            g.act(a.token, "order_roll", {})
 
     def test_cannot_join_running_game(self):
         g, _ = new_game(2)

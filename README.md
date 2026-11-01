@@ -1,7 +1,7 @@
 # duopoly
 Self hosted property-owning game
 
-A browser-based, multiplayer game that follows the official Monopoly rules. It runs one shared game. Players open the page, join with a name and color, and the game starts when everyone has clicked **I'm ready** (2–8 players).
+A browser-based, multiplayer game that follows the official Monopoly rules. It runs one shared game. Players open the page, join with a name and color, and the game starts when everyone has clicked **I'm ready** (2–8 players). Each player then clicks their own dice to roll for turn order. Everyone sees the results live. The highest total goes first. The order is drawn when the game starts and the rolls are set to match it, so there are never ties.
 
 ## Run
 

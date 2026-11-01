@@ -122,6 +122,10 @@ def play(seed):
     ps = [g.join({"name": f"Bot{i}"}) for i in range(n)]
     for p in ps:
         g.act(p.token, "ready", {"ready": True})
+    while g.phase == "order":
+        for p in list(g.players.values()):
+            if p.order_roll is None:
+                g.act(p.token, "order_roll", {})
     for steps in range(MAX_STEPS):
         if g.phase == "over":
             return steps, True
