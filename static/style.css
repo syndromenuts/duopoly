@@ -55,7 +55,11 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .swatches input:disabled + span { opacity: .15; cursor: default; }
 
 #lobby { max-width: 520px; margin: 0 auto; padding: 0 16px 16px; }
-#lobby-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; } /* one box per player */
+/* One box per player, on a see-through panel sized for the full room (MAX_PLAYERS = 8 in game.py: 4 x 2, or 2 x 4 on narrow
+   screens). The rows are explicit, so the panel keeps its full size however few have joined. */
+#lobby-players { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(96px, auto)); gap: 8px;
+  padding: 8px; border-radius: var(--radius); background: rgba(0,0,0,.28); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+@media (max-width: 420px) { #lobby-players { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(96px, auto)); } }
 #lobby-players li { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; text-align: center; border-radius: var(--radius); }
 #lobby-players li.is-ready { background: rgba(95,212,127,.12); }
 #lobby-players li.not-ready { background: rgba(255,107,91,.12); }
@@ -64,7 +68,7 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 #lobby-players .ready-tag { font-size: .8em; font-weight: bold; letter-spacing: .05em; color: #ff6b5b; }
 #lobby-players .is-ready .ready-tag { color: #5fd47f; }
 #lobby-players em { font-size: .8em; }
-#lobby-players li:not([class]) { grid-column: 1 / -1; } /* "No one yet." spans the whole row */
+#lobby-players li:not([class]) { grid-column: 1 / -1; align-self: center; color: var(--muted); } /* "No one yet." spans the whole row */
 #lobby-me:not([hidden]) { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 14px; } /* the big ready button, centred, with Leave tucked beneath */
 #ready-btn { display: flex; align-items: center; justify-content: center; gap: 14px; min-width: 60%; padding: 10px 24px; font-size: 24px; font-weight: bold; letter-spacing: .15em; text-transform: uppercase;
   color: var(--act); background: color-mix(in srgb, var(--act) 18%, transparent); border: 6px double var(--act); } /* framed like the Join button, in the action's color */
