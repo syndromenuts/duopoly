@@ -263,8 +263,11 @@ function renderLobby() {
   const tint = () => $("join-name").style.setProperty("--pick", joinColor || ""); // the name box wears the chosen color
   tint();
   $("join-colors").querySelectorAll("input").forEach((el) => (el.onchange = () => { joinColor = el.value; tint(); }));
-  $("lobby-players").innerHTML = S.players.map((p) => `<li><span class="dot" style="background:${p.color}"></span> ${esc(p.name)}
-    ${p.ready ? "✅ ready" : "⏳ not ready"} ${p.connected ? "" : `<em>(disconnected)</em> ${joined && p.id !== myId ? btn("Remove", "kick", { id: p.id }, "secondary") : ""}`}</li>`).join("") || "<li>No one yet.</li>";
+  $("lobby-players").innerHTML = S.players.map((p) => `<li class="${p.ready ? "is-ready" : "not-ready"}">
+    <span class="dot" style="background:${p.color}"></span>
+    <span class="name">${esc(p.name)}</span>
+    <span class="ready-tag">${p.ready ? "READY" : "NOT READY"}</span>
+    ${p.connected ? "" : `<em>(disconnected)</em> ${joined && p.id !== myId ? btn("Remove", "kick", { id: p.id }, "secondary") : ""}`}</li>`).join("") || "<li>No one yet.</li>";
   if (joined) $("ready-btn").textContent = me().ready ? "Not ready" : "I'm ready";
   document.querySelectorAll("[data-rule]").forEach((el) => { el.checked = !!S.rules[el.dataset.rule]; el.disabled = !joined; });
   const cash = $("start-cash");

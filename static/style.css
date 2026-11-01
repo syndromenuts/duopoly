@@ -55,7 +55,16 @@ button:not(.secondary) .money { color: inherit; } /* and on the colored buttons 
 .swatches input:disabled + span { opacity: .15; cursor: default; }
 
 #lobby { max-width: 520px; margin: 0 auto; padding: 0 16px 16px; }
-#lobby-players li { padding: 4px 0; }
+#lobby-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; } /* one box per player */
+#lobby-players li { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; text-align: center; border-radius: var(--radius); }
+#lobby-players li.is-ready { background: rgba(95,212,127,.12); }
+#lobby-players li.not-ready { background: rgba(255,107,91,.12); }
+#lobby-players .dot { width: 28px; height: 28px; }
+#lobby-players .name { font-weight: bold; overflow-wrap: anywhere; }
+#lobby-players .ready-tag { font-size: .8em; font-weight: bold; letter-spacing: .05em; color: #ff6b5b; }
+#lobby-players .is-ready .ready-tag { color: #5fd47f; }
+#lobby-players em { font-size: .8em; }
+#lobby-players li:not([class]) { grid-column: 1 / -1; } /* "No one yet." spans the whole row */
 #join-form { background: none; box-shadow: none; } /* the join form sits straight on the wood, no card behind it */
 #join-name { display: block; width: 100%; padding: 12px 16px; font-size: 22px; text-align: center; border: 2px solid var(--pick, #e0b81f); background: var(--bg); } /* the first thing to fill in, framed in the color you picked */
 #join-name::placeholder { color: var(--muted); font-style: italic; }
