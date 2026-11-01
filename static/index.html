@@ -11,22 +11,26 @@
 <div id="toast" hidden></div>
 
 <section id="lobby" hidden>
-  <h1>Duopoly</h1>
-  <div id="join-form" class="card" hidden>
-    <form id="join">
-      <input id="join-name" maxlength="20" placeholder="Your name" autocomplete="off" required>
-      <div id="join-colors" class="swatches"></div>
-      <button type="submit">Join</button>
-    </form>
-  </div>
-  <div id="players-card" class="card">
-    <h2>Players</h2>
-    <ul id="lobby-players" class="plain"></ul>
-    <div id="lobby-me" hidden>
-      <button id="ready-btn"></button>
-      <button id="leave-btn" class="secondary">Leave</button>
+  <div id="lobby-top">
+    <div id="lobby-head">
+      <h1>Duopoly</h1>
+      <div id="players-card" class="card">
+        <h2>Room</h2>
+        <ul id="lobby-players" class="plain"></ul>
+        <div id="lobby-me" hidden>
+          <button id="ready-btn"></button>
+          <button id="leave-btn" class="secondary">Leave</button>
+        </div>
+        <p class="hint">The game starts when at least 2 players have joined and everyone is ready.</p>
+      </div>
     </div>
-    <p class="hint">The game starts when at least 2 players have joined and everyone is ready.</p>
+    <div id="join-form" class="card" hidden>
+      <form id="join">
+        <input id="join-name" maxlength="20" placeholder="Your name" autocomplete="off" required>
+        <div id="join-colors" class="swatches"></div>
+        <button type="submit">Join</button>
+      </form>
+    </div>
   </div>
   <div class="card">
     <h2>Rules</h2>
