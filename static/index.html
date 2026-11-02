@@ -43,7 +43,7 @@
 </section>
 
 <section id="game" hidden>
-  <div id="board">
+  <div id="board" class="folded">
     <div id="center">
       <div id="deck-chance" class="deck chance"><div class="back"><span>?</span>MYSTERY<span>?</span></div><div class="face" hidden></div></div>
       <div id="status"></div>
@@ -55,6 +55,9 @@
     <span id="mover" class="dot" hidden></span>
     <div id="flyer" class="face" hidden></div>
     <div id="money" hidden></div>
+    <canvas class="light diffuse" aria-hidden="true"></canvas>
+    <canvas class="light spec" aria-hidden="true"></canvas>
+    <div class="shade" aria-hidden="true"></div>
   </div>
   <aside id="side">
     <div id="me" class="card"></div>
@@ -63,6 +66,7 @@
     <div id="game-acts"></div>
     <ol id="turns" class="plain"></ol>
   </aside>
+  <canvas id="lamp" aria-hidden="true"></canvas>
 </section>
 
 <div id="auction" class="modal" hidden>

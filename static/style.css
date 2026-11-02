@@ -5,6 +5,8 @@
   --accent: #4a8fd9; --danger: #d64545; --warn: #f0a13a;
   --board: #cfe5cf; --cell: #fbfbf7; --cell-fg: #222; --cell-muted: #555; --cell-line: #4a5058; --mort: #ddd;
   --radius: 4px; /* every box and button, matching the turn list */
+  /* Seamless grey noise for the board's grain and the board's cardboard back */
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --money: #9be89b; --build: #1a7f37; --hotel: #c53030; --chance: #ee8a43; --chest: #4482c6;
 }
 * { box-sizing: border-box; }
@@ -139,7 +141,46 @@ html:has(#game:not([hidden])) { scrollbar-gutter: stable; } /* the scroll bar co
 
 #game { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px; align-items: flex-start; justify-content: center; }
 #board { --B: min(96vw, 94vh, 860px); position: relative; display: grid; grid-template-columns: 1.4fr repeat(9, 1fr) 1.4fr; grid-template-rows: 1.4fr repeat(9, 1fr) 1.4fr;
-  width: var(--B); aspect-ratio: 1; background: var(--board); border: 2px solid var(--cell-line); }
+  width: var(--B); aspect-ratio: 1; background: var(--board); border: 2px solid var(--cell-line); isolation: isolate;
+  --grain: .08; /* strength of the printed-cardboard tooth */
+  --shadow-dim: 0 0 4px 1px rgba(0,0,0,.35), 0 0 0 transparent, 0 0 0 transparent;
+  --shadow-lit: 0 0 1px 1px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.55), 0 6px 26px rgba(0,0,0,.4); /* tight under the board: the lamp is above it */
+  box-shadow: var(--shadow-dim); }
+#dice-box, #center .deck { z-index: 4; } /* things lying on the board, so its creases and sheen don't run through them */
+#status, #center-info { position: relative; z-index: 4; } /* game text in the middle stays readable under the lamp's highlight */
+#dice-box, #center .deck { transition: filter .4s; }
+#board.lit #dice-box, #board.lit #center .deck { filter: brightness(.84); } /* lit about as much as the middle of the board they lie on */
+#board.folded { opacity: 0; } /* until it unfolds, after the turn-order popup */
+/* A lamp hangs over the table. Its light on the board is rendered by lightBoard() into two canvases over the squares and center,
+   under the pieces and popups: the shading multiplies the board's colors, the reflections add to them. */
+#board::before, #board > .light, #board > .shade { content: ""; position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); z-index: 3; pointer-events: none; }
+#board::before { background: var(--noise) 0 0 / 200px; mix-blend-mode: overlay; opacity: var(--grain); }
+#board > .light { opacity: 0; }
+#board > .light.diffuse { mix-blend-mode: multiply; }
+#board > .light.spec { mix-blend-mode: screen; }
+/* Before the lamp comes on the board sits in the room's dim firelight: an even warm dark tint, so it melts into the wood. */
+#board > .shade { z-index: 5; mix-blend-mode: multiply; background: rgb(84 48 29); }
+#board.lit > .light { opacity: 1; }
+#board.lit > .shade { opacity: 0; }
+#board.lit { box-shadow: var(--shadow-lit); transition: box-shadow .4s ease-out; }
+/* The same lamp on the wood around the board: color-dodge scales the wood's own colors up, so its grain stays. */
+#game { position: relative; overflow: clip; min-height: 100vh; min-height: 100svh; }
+#board, #side { z-index: 1; }
+#lamp { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; opacity: 0; mix-blend-mode: color-dodge; } /* covers the whole game area, so the light never shows an edge */
+#board.lit ~ #lamp { opacity: 1; }
+/* The board opening, folded in quarters: built and thrown away by unfoldBoard() */
+.fold-layer { position: fixed; z-index: 9; pointer-events: none; }
+.fold-flap { position: absolute; inset: 0; transform-style: preserve-3d; }
+.fold-flap.x { transform: perspective(1600px) rotateX(180deg); }
+.fold-flap.y { transform: perspective(1600px) rotateY(-180deg); }
+.fold-face, .fold-card { position: absolute; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.fold-face { overflow: hidden; }
+.fold-card { display: grid; place-items: center; border: 2px solid #0c131d; box-shadow: 0 0 10px rgba(0,0,0,.5);
+  background: var(--noise) 0 0 / 200px, linear-gradient(135deg, #26364d, #152030); background-blend-mode: soft-light, normal; } /* the board's back */
+.fold-card::after { content: ""; position: absolute; inset: 0; mix-blend-mode: multiply; background: rgb(84 48 29); } /* the same unlit firelight as the board */
+.fold-card.back-x { transform: rotateX(180deg); }
+.fold-card.back-y { transform: rotateY(180deg); }
+.fold-card b { color: #e0b81f; font-weight: bold; letter-spacing: .25em; text-transform: uppercase; text-shadow: 0 2px 4px rgba(0,0,0,.6); }
 #game-acts { margin-top: auto; }
 #game-acts .row { display: flex; align-items: center; justify-content: flex-end; }
 #game-acts button.small { padding: 3px 8px; font-size: 13px; }
@@ -204,14 +245,14 @@ html:has(#game:not([hidden])) { scrollbar-gutter: stable; } /* the scroll bar co
 .cell.jail .bars { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; fill: none; stroke: #1a1a1a; stroke-width: 3; }
 .cell.jail .bars .lock { fill: #1a1a1a; stroke: none; }
 .cell.jail .bars .keyhole { fill: #c8ccd2; stroke: none; }
-.cell.jail .toks { bottom: 3px; left: 3px; justify-content: flex-start; flex-wrap: wrap-reverse; z-index: 3; } /* visitors in the L, in front of the box */
+.cell.jail .toks { bottom: 3px; left: 3px; justify-content: flex-start; flex-wrap: wrap-reverse; z-index: 4; } /* visitors in the L, in front of the box */
 .cell .owner { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; }
 .cell.mort { background: repeating-linear-gradient(45deg, var(--cell), var(--cell) 5px, var(--mort) 5px, var(--mort) 10px); }
 .cell .bld, .tprop .bld, .prop-head .bld { color: var(--build); font-weight: 700; letter-spacing: -1px; line-height: 1; white-space: nowrap;
   text-shadow: -1px 0 #1a1a1a, 1px 0 #1a1a1a, 0 -1px #1a1a1a, 0 1px #1a1a1a; } /* outlined so it shows on any strip colour, green and red included */
 .cell .bld:not(.hotel), .tprop .bld:not(.hotel) { font-size: 1.4em; }
 .cell .bld.hotel, .tprop .bld.hotel, .prop-head .bld.hotel { width: 50%; height: 65%; box-sizing: border-box; background: var(--hotel); border: 1px solid #1a1a1a; } /* a big red block, drawn rather than spelled out */
-.cell .toks { position: absolute; bottom: 5px; left: 0; right: 0; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 1px; }
+.cell .toks { position: absolute; bottom: 5px; left: 0; right: 0; z-index: 4; display: flex; flex-wrap: wrap; justify-content: center; gap: 1px; }
 .cell .toks .dot, .cell .inmates .dot { width: clamp(12px, 2vw, 20px); height: clamp(12px, 2vw, 20px); box-sizing: border-box; border: 3px solid #1a1a1a; margin: 0 -2px;
   box-shadow: 0 2px 5px rgba(0,0,0,.55); }
 #mover { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; width: clamp(14px, 2.4vw, 26px); height: clamp(14px, 2.4vw, 26px);

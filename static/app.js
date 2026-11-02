@@ -258,9 +258,11 @@ function render() {
     for (const id in tallies) delete tallies[id];
     for (const p of S.players) tallies[p.id] = { from: 0, to: 0, start: -Infinity, shown: 0, done: true };
     orderShown = {};
+    foldBoard();
     return renderLobby();
   }
   renderOrder();
+  if (!unfolded && $("order").hidden) unfoldBoard(); // first look at the board this game, once the turn-order popup is gone
   renderBoard();
   renderMe();
   renderBuyOffer();
@@ -300,6 +302,232 @@ function renderLobby() {
   const cash = $("start-cash");
   if (document.activeElement !== cash) cash.value = S.rules.start_cash;
   cash.disabled = !joined;
+}
+
+// ------------------------------------------------------------------ board intro
+
+// The board arrives folded in quarters, back up, and opens like a real one: the bottom-left
+// quarter flips down, then the right half swings open to show the face. As it lands, the lamp
+// over the table flickers on. The flaps are throwaway copies; the real board ends untouched.
+let unfolded = false;
+const FOLD_EASE = "cubic-bezier(.45,.05,.25,1)", FOLD_MS = 260;
+
+function foldBoard() {
+  unfolded = false;
+  unfoldBoard.run = null;
+  document.querySelectorAll(".fold-layer").forEach((e) => e.remove());
+  const board = $("board");
+  board.className = "folded";
+  board.style.opacity = board.style.clipPath = board.style.transform = "";
+}
+
+// ------------------------------------------------------------------ lamplight
+
+// One lamp hangs over the table. Its light on the board is rendered once (and again on resize) by a
+// small WebGL shader lighting a simulated surface: a board that doesn't lie quite flat, paper fibre,
+// the two creases from being folded in quarters, a rounded edge, and a semi-gloss coating whose
+// roughness varies. The shading goes into one canvas, multiplied over the board, and the reflections
+// into another, screened over it, so the board's own colors are what the lamp lights.
+// Positions are in board widths from its top-left corner, with z up toward the lamp.
+const LAMP = [0.47, 0.42, 0.85, 0.06]; // over the board, a touch up and left; the last value is the shade's radius
+const EYE = [0.5, 0.8, 2.4]; // the player, sitting at the bottom edge
+
+const LIGHT_FS = `precision highp float;
+uniform vec2 uRes;
+uniform float uMode; // 0: shading, 1: reflections
+uniform vec4 uLamp;
+uniform vec3 uEye;
+float hash(vec2 p) { p = fract(p * vec2(234.34, 435.345)); p += dot(p, p + 34.23); return fract(p.x * p.y); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a * noise(p); p = p * 2.03 + 17.0; a *= 0.5; } return s; }
+float crease(float d) { return -0.0005 * exp(-d * d / 1.6e-5) + 0.001 * exp(-d * d / 0.004); } // a fine valley along a soft ridge
+float height(vec2 p) {
+  float e = min(min(p.x, 1.0 - p.x), min(p.y, 1.0 - p.y));
+  return (fbm(p * 2.5) - 0.5) * 0.006
+       + (fbm(p * vec2(300.0, 280.0)) - 0.5) * 0.00008
+       + crease(p.x - 0.5) + crease(p.y - 0.5)
+       - 0.002 * (1.0 - smoothstep(0.0, 0.005, e));
+}
+void main() {
+  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes;
+  float px = 1.0 / uRes.x;
+  vec3 n = normalize(vec3(height(p - vec2(px, 0.0)) - height(p + vec2(px, 0.0)), height(p - vec2(0.0, px)) - height(p + vec2(0.0, px)), 2.0 * px));
+  vec3 pos = vec3(p, height(p));
+  vec3 toL = uLamp.xyz - pos;
+  float d2 = dot(toL, toL);
+  vec3 l = toL * inversesqrt(d2), v = normalize(uEye - pos), h = normalize(l + v);
+  float nl = max(dot(n, l), 0.0), nv = max(dot(n, v), 1e-3), nh = max(dot(n, h), 0.0), vh = max(dot(v, h), 0.0);
+  float irr = nl * uLamp.z * uLamp.z / d2; // 1 straight under the lamp, falling off with distance and angle
+  float dither = (hash(gl_FragCoord.xy + uMode) - 0.5) / 255.0;
+  if (uMode < 0.5) {
+    vec3 c = vec3(1.0, 0.95, 0.88) * 0.15 + vec3(0.72) * irr; // the lamp never quite reaches full white, so the highlight can // warm room light, plus the white lamp
+    gl_FragColor = vec4(c + dither, 1.0);
+  } else {
+    float a0 = pow(mix(0.22, 0.34, fbm(p * 6.0 + 3.0)), 2.0); // the coating is worn unevenly
+    float a = min(a0 + uLamp.w / (2.0 * sqrt(d2)), 1.0); // a lamp, not a point, so the highlight spreads
+    float a2 = a * a, dd = nh * nh * (a2 - 1.0) + 1.0, k = a * 0.5;
+    float D = a2 / (3.14159 * dd * dd) * (a0 / a) * (a0 / a);
+    float F = 0.04 + 0.96 * pow(1.0 - vh, 5.0);
+    float V = 0.25 / ((nl * (1.0 - k) + k) * (nv * (1.0 - k) + k));
+    float s = min(D * F * V * irr * 7.0, 0.55); // kept below glare, so print stays readable
+    gl_FragColor = vec4(vec3(s) + dither, 1.0);
+  }
+}`;
+
+function renderBoardLight(n) {
+  const glc = document.createElement("canvas");
+  glc.width = glc.height = n;
+  const gl = glc.getContext("webgl", { preserveDrawingBuffer: true, antialias: false });
+  if (!gl) return null; // no lamp without WebGL; the board looks as it always did
+  const shader = (type, src) => { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return sh; };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, shader(gl.VERTEX_SHADER, "attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }"));
+  gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, LIGHT_FS));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.warn("lamp shader:", gl.getProgramInfoLog(prog)); return null; }
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.viewport(0, 0, n, n);
+  gl.uniform2f(gl.getUniformLocation(prog, "uRes"), n, n);
+  gl.uniform4f(gl.getUniformLocation(prog, "uLamp"), ...LAMP);
+  gl.uniform3f(gl.getUniformLocation(prog, "uEye"), ...EYE);
+  const out = [0, 1].map((mode) => {
+    gl.uniform1f(gl.getUniformLocation(prog, "uMode"), mode);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    const c = document.createElement("canvas");
+    c.width = c.height = n;
+    c.getContext("2d").drawImage(glc, 0, 0);
+    return c;
+  });
+  gl.getExtension("WEBGL_lose_context")?.loseContext(); // done with the GPU until the next resize
+  return out;
+}
+
+// Lights the board, and the wood around it, for the board's current size and place.
+function lightBoard() {
+  const b = $("board"), W = b.offsetWidth;
+  if (!W) return;
+  const n = Math.round(W * Math.min(devicePixelRatio || 1, 2));
+  const [diffuse, spec] = b.querySelectorAll("canvas.light");
+  if (diffuse.width !== n) {
+    const out = renderBoardLight(n);
+    if (out) [diffuse, spec].forEach((c, i) => { c.width = c.height = n; c.getContext("2d").drawImage(out[i], 0, 0); });
+  }
+  // The wood: the lamp is a spotlight aimed at the board, casting a round pool just wider than the
+  // board's corners with a soft rim; the table beyond it is left as it was.
+  // Color-dodge by s scales the wood's colors by 1 / (1 - s), so s is set for the lamp's gain at each point.
+  const game = $("game"), lamp = $("lamp"), step = 2;
+  const w = Math.ceil(game.clientWidth / step), h = Math.ceil(game.clientHeight / step);
+  lamp.width = w; lamp.height = h;
+  lamp.style.width = w * step + "px"; lamp.style.height = h * step + "px";
+  const ctx = lamp.getContext("2d"), img = ctx.createImageData(w, h);
+  const POOL = 0.78, EDGE = 0.14; // the pool's radius from the board's center, and how soft its rim is, in board widths
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const bx = (x * step - b.offsetLeft) / W, by = (y * step - b.offsetTop) / W;
+      const dx = bx - LAMP[0], dy = by - LAMP[1], z = LAMP[2];
+      const irr = (z / Math.sqrt(dx * dx + dy * dy + z * z)) ** 3; // cos / d², 1 right under the lamp
+      const t = Math.min(Math.max((POOL - Math.hypot(bx - 0.5, by - 0.5)) / EDGE + 0.5, 0), 1); // 1 inside the pool, 0 outside
+      const gain = 1 + 1.3 * irr * t * t * (3 - 2 * t);
+      const i = (y * w + x) * 4;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = 255 * (1 - 1 / gain);
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+addEventListener("resize", () => {
+  clearTimeout(lightBoard.timer);
+  if (unfolded) lightBoard.timer = setTimeout(lightBoard, 150);
+});
+
+// The lamp catches like a real one: it snaps on dim, stutters at uneven intervals, a little brighter
+// each time, then holds at full. The dark tint follows it inversely, so the board falls back toward
+// dark whenever the light dips.
+const LAMP_FLICKER = [ // [level, ms held], each reached by a ~9ms snap
+  [0.55, 240], [0.2, 22],
+  [0.8, 110], [0.4, 14],
+  [1, 0],
+];
+function flickerLamp() {
+  const SNAP = 9, steps = [[0, 0]]; // [ms, level]
+  let t = 0;
+  for (const [lvl, hold] of LAMP_FLICKER) { t += SNAP; steps.push([t, lvl]); t += hold; steps.push([t, lvl]); }
+  const total = t;
+  const frames = (f) => steps.map(([ms, lvl]) => ({ offset: ms / total, opacity: f(lvl) }));
+  const on = frames((l) => l), off = frames((l) => 1 - l);
+  const board = $("board");
+  for (const el of [...board.querySelectorAll(".light"), $("lamp")]) el.animate(on, { duration: total });
+  board.querySelector(".shade").animate(off, { duration: total });
+}
+
+async function unfoldBoard() {
+  unfolded = true;
+  const run = (unfoldBoard.run = {});
+  const board = $("board");
+  board.classList.remove("folded");
+  if (document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    lightBoard();
+    board.classList.add("lit");
+    if (!document.hidden) board.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+    return;
+  }
+  const r = board.getBoundingClientRect(), W = r.width, q = W / 4;
+  const at = (x, y) => `translate(${x}px, ${y}px)`;
+  const turn = (fn, a) => `perspective(1600px) ${fn}(${a}deg)`;
+  const box = (x, y, w, h) => `left:${x}%;top:${y}%;width:${w}%;height:${h}%`;
+  const layer = document.createElement("div");
+  layer.className = "fold-layer";
+  layer.setAttribute("aria-hidden", "true");
+  layer.style.cssText = `left:${r.left}px;top:${r.top}px;width:${W}px;height:${r.height}px;font-size:${W * 0.045}px`;
+  layer.innerHTML = `<div class="fold-card" style="${box(0, 0, 50, 50)}"></div>
+    <div class="fold-flap x"><div class="fold-card" style="${box(0, 50, 50, 50)}"></div><div class="fold-card back-x" style="${box(0, 50, 50, 50)}"><b>Duopoly</b></div></div>
+    <div class="fold-flap y" hidden><div class="fold-face" style="${box(50, 0, 50, 100)}"></div><div class="fold-card back-y" style="${box(50, 0, 50, 100)}"></div></div>`;
+  const [under, flapX, flapY] = layer.children;
+  document.body.appendChild(layer);
+  board.style.opacity = "0";
+  // Board and flaps slide together so whatever is open stays centered where the board will lie.
+  const slide = (a, b) => {
+    for (const el of [board, layer]) {
+      el.style.transform = at(...b);
+      el.animate([{ transform: at(...a) }, { transform: at(...b) }], { duration: FOLD_MS, easing: FOLD_EASE });
+    }
+  };
+  const swing = (el, fn, from) => {
+    el.style.transform = turn(fn, 0);
+    return el.animate([{ transform: turn(fn, from) }, { transform: turn(fn, 0) }], { duration: FOLD_MS, easing: FOLD_EASE }).finished;
+  };
+  board.style.transform = layer.style.transform = at(q, q);
+  await layer.animate([{ opacity: 0, transform: at(q, q) + " scale(.94)" }, { opacity: 1, transform: at(q, q) }], { duration: 140, easing: "ease-out" }).finished;
+  if (run !== unfoldBoard.run) return;
+  slide([q, q], [q, 0]);
+  await swing(flapX, "rotateX", 180);
+  if (run !== unfoldBoard.run) return;
+  // The right half's face is a copy of the board as it is now; the real left half shows beside it.
+  const copy = board.cloneNode(true);
+  copy.inert = true;
+  copy.style.cssText = "position:absolute;left:-100%;top:0;margin:0";
+  flapY.firstChild.appendChild(copy);
+  under.remove();
+  flapX.remove();
+  flapY.hidden = false;
+  board.style.opacity = "";
+  board.style.clipPath = "inset(0 calc(50% - 1px) 0 0)"; // a pixel under the flap, so no hairline shows at the hinge
+  slide([q, 0], [0, 0]);
+  await swing(flapY, "rotateY", -180);
+  if (run !== unfoldBoard.run) return;
+  layer.remove();
+  board.style.clipPath = board.style.transform = "";
+  lightBoard();
+  board.classList.add("lit");
+  flickerLamp();
+  board.animate([{ transform: "scale(1.012)" }, { transform: "none" }], { duration: 120, easing: "ease-out" });
 }
 
 // ------------------------------------------------------------------ rolling for turn order
