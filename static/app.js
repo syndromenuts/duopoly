@@ -262,7 +262,8 @@ function render() {
     return renderLobby();
   }
   renderOrder();
-  if (!unfolded && $("order").hidden) unfoldBoard(); // first look at the board this game, once the turn-order popup is gone
+  if (S.phase !== "playing") sawStart = true;
+  if (!unfolded && $("order").hidden) unfoldBoard(!sawStart); // first look at the board this game, once the turn-order popup is gone; no show when joining a game already under way
   renderBoard();
   renderMe();
   renderBuyOffer();
@@ -310,6 +311,7 @@ function renderLobby() {
 // quarter flips down, then the right half swings open to show the face. As it lands, the lamp
 // over the table flickers on. The flaps are throwaway copies; the real board ends untouched.
 let unfolded = false;
+let sawStart = false; // this page was open for the lobby or turn-order roll, so it watches the game begin
 const FOLD_EASE = "cubic-bezier(.45,.05,.25,1)", FOLD_MS = 260;
 
 function foldBoard() {
@@ -467,15 +469,19 @@ function flickerLamp() {
   board.querySelector(".shade").animate(off, { duration: total });
 }
 
-async function unfoldBoard() {
+async function unfoldBoard(instant = false) {
   unfolded = true;
   const run = (unfoldBoard.run = {});
   const board = $("board");
   board.classList.remove("folded");
-  if (document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (instant || document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) {
     lightBoard();
+    if (instant) {
+      board.classList.add("no-anim"); // straight to lit, without the shadow and dimming transitions
+      requestAnimationFrame(() => requestAnimationFrame(() => board.classList.remove("no-anim")));
+    }
     board.classList.add("lit");
-    if (!document.hidden) board.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+    if (!instant && !document.hidden) board.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
     return;
   }
   const r = board.getBoundingClientRect(), W = r.width, q = W / 4;

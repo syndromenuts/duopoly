@@ -150,6 +150,7 @@ html:has(#game:not([hidden])) { scrollbar-gutter: stable; } /* the scroll bar co
 #status, #center-info { position: relative; z-index: 4; } /* game text in the middle stays readable under the lamp's highlight */
 #dice-box, #center .deck { transition: filter .4s; }
 #board.lit #dice-box, #board.lit #center .deck { filter: brightness(.84); } /* lit about as much as the middle of the board they lie on */
+#board.no-anim, #board.no-anim * { transition: none !important; }
 #board.folded { opacity: 0; } /* until it unfolds, after the turn-order popup */
 /* A lamp hangs over the table. Its light on the board is rendered by lightBoard() into two canvases over the squares and center,
    under the pieces and popups: the shading multiplies the board's colors, the reflections add to them. */
