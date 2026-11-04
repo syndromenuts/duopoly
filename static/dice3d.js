@@ -18,7 +18,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 const AIM = [0.5, 0.48]; // where throws head, about where the 2D dice sat; fixed, so it's the same on every screen
 
 let renderer, scene, camera, canvas, boardEl, ambient, lamp, bounce, catcher, home;
-let lampLevel = 0, ready = false, hover = false, hoverAmt = 0, glowLevel = 0, mats = [];
+let lampLevel = 0, ready = false, hover = false, hoverAmt = 0, bob = 0, glowLevel = 0, mats = [];
 let run = null; // the throw being played back
 let frameReq = 0;
 const dice = [];
@@ -322,7 +322,8 @@ function frame(now) {
   let more = false;
   if (run) { play((now - run.t0) / 1000); more = !!run; }
   const lift = ready && hover && !run ? 1 : 0;
-  if (Math.abs(hoverAmt - lift) > 0.001) { hoverAmt += (lift - hoverAmt) * 0.25; more = true; } else hoverAmt = lift;
+  if (Math.abs(hoverAmt - lift) > 0.001) { hoverAmt += (lift - hoverAmt) * 0.16; more = true; } else hoverAmt = lift;
+  bob = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : Math.sin((now / 1600) * 2 * Math.PI);
   const pulse = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 0.5 - 0.5 * Math.cos((now / 1400) * 2 * Math.PI); // the 2D dice's 1.4s pulse
   glowLevel = ready && !run ? 0.7 + 0.3 * Math.max(pulse, hoverAmt) : 0; // steady and full while hovered
   // Tinted blue, and glowing blue on top: the glow alone vanishes on the brightly lit top faces.
@@ -335,11 +336,19 @@ function frame(now) {
 function draw() {
   if (!renderer || !canvas.clientWidth) return;
   for (const d of dice) {
-    const y = d.group.position.y + (run ? 0 : hoverAmt * SIZE * 0.25);
-    d.mesh.position.y = run ? 0 : hoverAmt * SIZE * 0.25;
+    // Hovered, a die you can roll rises off the board and floats, bobbing gently. Seen from straight
+    // above with the lamp nearly overhead, height alone hardly shows, so it also grows a touch (as
+    // something coming toward you does), and its contact shadow stays behind on the board, spreading
+    // and fading. The lift is straight up in the world, whichever way the die lies.
+    const up = run ? 0 : hoverAmt * SIZE * (0.55 + 0.06 * bob);
+    _lift.set(0, up, 0).applyQuaternion(_q.copy(d.group.quaternion).invert());
+    d.mesh.position.copy(_lift);
+    d.mesh.scale.setScalar(1 + (run ? 0 : hoverAmt * 0.1));
+    const y = d.group.position.y + up;
     d.blob.position.set(d.group.position.x, 0.0004, d.group.position.z);
     d.blob.visible = d.group.visible;
-    d.blob.material.opacity = 0.32 * Math.max(0, 1 - (y - REST_Y) / (SIZE * 1.5));
+    d.blob.scale.setScalar(1 + (y - REST_Y) / SIZE);
+    d.blob.material.opacity = 0.32 * Math.max(0, 1 - (y - REST_Y) / (SIZE * 1.2));
     d.halo.visible = d.group.visible && glowLevel > 0;
     if (d.halo.visible) {
       d.halo.position.set(d.group.position.x, 0.0006, d.group.position.z);
@@ -351,7 +360,7 @@ function draw() {
 }
 
 // How far a lying die is turned about the vertical, from whichever of its edges lies flat.
-const _q = new THREE.Quaternion();
+const _q = new THREE.Quaternion(), _lift = new THREE.Vector3();
 function yaw(d) {
   _q.copy(d.group.quaternion).multiply(d.mesh.quaternion);
   let best = null;
