@@ -96,6 +96,7 @@ class Game:
         self.turn = 0
         self.stage = "roll"  # roll | buy | auction | done
         self.dice = None
+        self.dice_from = None  # where the roller's dice lay on their screen, so every client throws them from the same spots
         self.moves = []
         self.doubles = 0
         self.extra_roll = False
@@ -380,6 +381,19 @@ class Game:
         if self.stage != stage:
             raise GameError("You can't do that right now.")
 
+    @staticmethod
+    def parse_dice_from(spots):
+        """Two [x, z] spots in board widths, or None if they aren't that; only the dice animation uses them."""
+        if not isinstance(spots, list) or len(spots) != 2:
+            return None
+        out = []
+        for s in spots:
+            if not isinstance(s, list) or len(s) != 2 or \
+                    any(type(v) not in (int, float) or not 0 <= v <= 1 for v in s):
+                return None
+            out.append([round(float(v), 4) for v in s])
+        return out
+
     def a_roll(self, p, data):
         self.require_turn(p, "roll")
         d1, d2 = self.roll_dice()
@@ -390,6 +404,7 @@ class Game:
                 raise GameError("Dice must be two values from 1 to 6.")
             d1, d2 = (d if d is not None else r for d, r in zip(chosen, (d1, d2)))
         self.dice = [d1, d2]
+        self.dice_from = self.parse_dice_from(data.get("from"))
         self.roll_id += 1
         self.moves = []
         total = d1 + d2
@@ -1012,7 +1027,7 @@ class Game:
             "phase": self.phase, "rules": self.rules, "yen_name": SPACES[YEN]["name"],
             "players": [p.public() for p in self.players.values()],
             "order": self.order, "turn": self.order[self.turn] if self.order else None,
-            "stage": self.stage, "dice": self.dice, "roll_id": self.roll_id, "moves": self.moves, "doubles": self.doubles, "blocked": self.blocked() if self.phase == "playing" else False,
+            "stage": self.stage, "dice": self.dice, "dice_from": self.dice_from, "roll_id": self.roll_id, "moves": self.moves, "doubles": self.doubles, "blocked": self.blocked() if self.phase == "playing" else False,
             "owners": {str(k): v for k, v in self.owners.items()},
             "houses": {str(k): v for k, v in self.houses.items() if v},
             "mortgaged": sorted(self.mortgaged),

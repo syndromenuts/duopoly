@@ -14,6 +14,7 @@ const PIPS = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 
 const ORDER = [2, 5, 1, 6, 3, 4]; // the value on each of the box's faces: +x, -x, +y, -y, +z, -z
 const REST_Y = SIZE / 2;
 const UP = new THREE.Vector3(0, 1, 0);
+const AIM = [0.5, 0.48]; // where throws head, about where the 2D dice sat; fixed, so it's the same on every screen
 
 let renderer, scene, camera, canvas, boardEl, ambient, lamp, bounce, catcher, home;
 let lampLevel = 0, ready = false, hover = false, hoverAmt = 0, mats = [];
@@ -181,20 +182,29 @@ export function reset() {
   draw();
 }
 
-// Throws both dice from where they lie so they come to rest showing `values`, the same throw on
-// every client for the same seed. The physics runs once, to the end, before anything moves; then each
+// Where the dice lie, [x, z] in board widths each, sent with a roll so every client throws from there.
+export function spots() {
+  if (!dice.every((d) => d.placed)) return null;
+  return dice.map((d) => [d.group.position.x, d.group.position.z].map((v) => Math.round(Math.min(Math.max(v, 0), 1) * 1e4) / 1e4));
+}
+
+// Throws both dice from `from` (the roller's spots(), as the server passed them on; else from where
+// they lie here) so they come to rest showing `values`. The same seed and `from` give the same throw
+// on every client: nothing here that depends on this screen's layout feeds the physics. A die lying
+// somewhere else on this screen (say, after a reload) slides into the throw over the launch. The physics runs once, to the end, before anything moves; then each
 // die's faces are printed so that the face which ended up on top carries its number. That reprint
 // happens out of sight: over the launch, each die turns from how it lay into the throw's starting
 // turn, already wearing its new faces. Returns how long until the dice rest, in ms.
-export function roll(values, seed) {
+export function roll(values, seed, from) {
   const spots = homeSpots();
   dice.forEach((d, i) => { if (!d.placed) lay(d, values[i] || 1, spots[i]); d.group.visible = true; });
   if (run) settle(); // a throw still going lands where it was headed first
-  const starts = dice.map((d) => d.group.position.toArray());
-  const aim = home ? [(spots[0].x + spots[1].x) / 2, (spots[0].z + spots[1].z) / 2] : [0.5, 0.5];
-  const sim = throwDice(starts, aim, seed);
+  const here = dice.map((d) => d.group.position.toArray());
+  const starts = from ? from.map(([x, z]) => [x, REST_Y, z]) : here;
+  const sim = throwDice(starts, AIM, seed);
   run = {
     t0: performance.now(), sim, values,
+    slide: here.map((p, i) => p.map((c, k) => c - starts[i][k])), // this screen's spot less the throw's
     from: dice.map((d) => d.group.quaternion.clone().multiply(d.mesh.quaternion)), // how each lies now, as seen
     print: dice.map((d, i) => cubeTurn(FACES[values[i]], sim.ups[i])),
   };
@@ -230,7 +240,8 @@ function play(t) {
     const s = t / LAUNCH;
     dice.forEach((d, i) => {
       const L = sim.launch[i];
-      d.group.position.set(L.start[0] + L.v[0] * t, L.start[1] + L.v[1] * t - 0.5 * GRAVITY * t * t, L.start[2] + L.v[2] * t);
+      const off = 1 - s * s * (3 - 2 * s), [ox, oy, oz] = run.slide[i].map((c) => c * off);
+      d.group.position.set(L.start[0] + L.v[0] * t + ox, L.start[1] + L.v[1] * t - 0.5 * GRAVITY * t * t + oy, L.start[2] + L.v[2] * t + oz);
       const turn = new THREE.Quaternion().setFromAxisAngle(run.turns[i].axis, run.turns[i].angle * s);
       d.group.quaternion.copy(turn.multiply(run.from[i])).multiply(run.print[i].clone().invert());
       d.mesh.quaternion.copy(run.print[i]);

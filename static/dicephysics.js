@@ -13,6 +13,9 @@ export const FACES = { 1: [0, 1, 0], 6: [0, -1, 0], 2: [1, 0, 0], 5: [-1, 0, 0],
 const K = 1 / SIZE;
 const STEP = 1 / 240, REC = 2; // physics at 240 Hz, recorded at 120
 const MAX_T = 4;
+// Air drag per step: 4% of the speed and 6% of the spin lost per second, as 0.96 ** (1 / 240) and
+// 0.94 ** (1 / 240) written out, since Math.pow may round differently between browsers.
+const DRAG = 0.9998299228209291, SPIN_DRAG = 0.9997422190490617;
 
 // A small seeded generator, so every client throws the same throw for a roll.
 export function rng(seed) {
@@ -26,10 +29,17 @@ export function rng(seed) {
   };
 }
 
-function randomQuat(r) { // uniform over all orientations
-  const u1 = r(), u2 = r() * 2 * Math.PI, u3 = r() * 2 * Math.PI;
-  const a = Math.sqrt(1 - u1), b = Math.sqrt(u1);
-  return [a * Math.sin(u2), a * Math.cos(u2), b * Math.sin(u3), b * Math.cos(u3)];
+// The throw must come out bit for bit the same in every browser, and Math.sin, cos and hypot may
+// differ in the last digit between engines (which a tumbling die blows up into a different landing).
+// So the seeded setup uses only arithmetic and sqrt, which are exact everywhere.
+
+// A random unit vector in n dimensions, uniform in direction: a point picked in the cube, kept if inside the ball.
+function direction(r, n) {
+  for (;;) {
+    const v = Array.from({ length: n }, () => r() * 2 - 1);
+    const len2 = v.reduce((s, c) => s + c * c, 0);
+    if (len2 > 1e-4 && len2 <= 1) return v.map((c) => c / Math.sqrt(len2));
+  }
 }
 
 function buildWorld() {
@@ -39,22 +49,21 @@ function buildWorld() {
   world.addContactMaterial(new CANNON.ContactMaterial(die, board, { friction: 0.2, restitution: 0.5 }));
   world.addContactMaterial(new CANNON.ContactMaterial(die, wall, { friction: 0.08, restitution: 0.5 }));
   world.addContactMaterial(new CANNON.ContactMaterial(die, die, { friction: 0.15, restitution: 0.45 }));
-  const plane = (mat, pos, axis, angle) => {
+  const plane = (mat, pos, q) => { // a plane faces its own +z; q turns it, written out rather than from angles
     const b = new CANNON.Body({ mass: 0, material: mat, shape: new CANNON.Plane() });
     b.position.set(...pos.map((v) => v * K));
-    b.quaternion.setFromAxisAngle(new CANNON.Vec3(...axis), angle);
+    b.quaternion.set(...q);
     world.addBody(b);
   };
-  const [lo, hi] = BOUNDS;
-  plane(board, [0, 0, 0], [1, 0, 0], -Math.PI / 2); // the board, facing up
-  plane(wall, [lo, 0, 0], [0, 1, 0], Math.PI / 2); // facing +x
-  plane(wall, [hi, 0, 0], [0, 1, 0], -Math.PI / 2); // facing -x
-  plane(wall, [0, 0, lo], [0, 1, 0], 0); // facing +z
-  plane(wall, [0, 0, hi], [0, 1, 0], Math.PI); // facing -z
+  const [lo, hi] = BOUNDS, h = Math.SQRT1_2;
+  plane(board, [0, 0, 0], [-h, 0, 0, h]); // the board, facing up
+  plane(wall, [lo, 0, 0], [0, h, 0, h]); // facing +x
+  plane(wall, [hi, 0, 0], [0, -h, 0, h]); // facing -x
+  plane(wall, [0, 0, lo], [0, 0, 0, 1]); // facing +z
+  plane(wall, [0, 0, hi], [0, 1, 0, 0]); // facing -z
   const dice = [0, 1].map(() => {
     const b = new CANNON.Body({ mass: 1, material: die, shape: new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5)) });
-    b.linearDamping = 0.04;
-    b.angularDamping = 0.06;
+    b.linearDamping = b.angularDamping = 0; // applied in tryThrow instead: cannon's uses Math.pow
     b.sleepSpeedLimit = 0.2;
     b.sleepTimeLimit = 0.15;
     world.addBody(b);
@@ -74,7 +83,8 @@ function upFace(q) {
   return { up: best, dot };
 }
 
-// Throws both dice from where they lie (`starts`, [x, y, z] each) toward `aim` ([x, z]).
+// Throws both dice from `starts` ([x, y, z] each) toward `aim` ([x, z]). Clients that pass the same
+// numbers and seed get the same throw.
 // Returns the launch, the recording ({ dt, frames: [[{p, q}, {p, q}], ...] }), and each die's up axis at rest.
 export function throwDice(starts, aim, seed) {
   const r = rng(seed);
@@ -96,11 +106,11 @@ function tryThrow(starts, aim, r, anyway = false) {
     const tz = Math.min(Math.max(aim[1] + (r() - 0.5) * 0.14, lo + pad), hi - pad);
     const vy = 1.9 + r() * 0.5; // up to ~0.1-0.15 board widths
     const flight = vy / GRAVITY + Math.sqrt(2 * (vy * vy / (2 * GRAVITY) + s[1] - SIZE / 2) / GRAVITY);
-    const ang = r() * 2 * Math.PI, kick = 0.15 + r() * 0.2; // a little sideways throw, so it never drops straight
-    const v = [(tx - s[0]) / flight * 0.6 + Math.cos(ang) * kick, vy, (tz - s[2]) / flight * 0.6 + Math.sin(ang) * kick];
-    const axis = [r() - 0.5, r() - 0.5, r() - 0.5], al = Math.hypot(...axis) || 1, spin = 28 + r() * 16;
-    const w = axis.map((c) => (c / al) * spin);
-    const q = randomQuat(r);
+    const [dx, dz] = direction(r, 2), kick = 0.15 + r() * 0.2; // a little sideways throw, so it never drops straight
+    const v = [(tx - s[0]) / flight * 0.6 + dx * kick, vy, (tz - s[2]) / flight * 0.6 + dz * kick];
+    const spin = 28 + r() * 16;
+    const w = direction(r, 3).map((c) => c * spin);
+    const q = direction(r, 4); // uniform over all orientations
     // Where the plain arc from the board has taken it by the end of the launch.
     const p = [s[0] + v[0] * LAUNCH, s[1] + v[1] * LAUNCH - 0.5 * GRAVITY * LAUNCH * LAUNCH, s[2] + v[2] * LAUNCH];
     const v1 = [v[0], v[1] - GRAVITY * LAUNCH, v[2]];
@@ -115,6 +125,7 @@ function tryThrow(starts, aim, r, anyway = false) {
   snap();
   for (let i = 1; i <= MAX_T / STEP; i++) {
     world.step(STEP);
+    for (const b of dice) { b.velocity.scale(DRAG, b.velocity); b.angularVelocity.scale(SPIN_DRAG, b.angularVelocity); }
     if (i % REC === 0) snap();
     if (dice.every((b) => b.sleepState === CANNON.Body.SLEEPING)) break;
   }

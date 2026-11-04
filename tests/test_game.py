@@ -146,6 +146,15 @@ class Movement(unittest.TestCase):
         act(g, b, "roll", dice=[4, None])  # None is random
         self.assertEqual(g.dice[0], 4)
 
+    def test_roll_passes_on_where_the_dice_lay(self):
+        g, (a, b, c) = new_game()
+        act(g, a, "roll", **{"from": [[0.4, 0.5], [0.61234567, 0.5]]})
+        self.assertEqual(g.state()["dice_from"], [[0.4, 0.5], [0.6123, 0.5]])
+        resolve_buy(g)
+        act(g, a, "end_turn")
+        act(g, b, "roll", **{"from": [[2, 0.5], [0.5, 0.5]]})  # off the board
+        self.assertIsNone(g.dice_from)
+
     def test_doubles_roll_again_and_three_doubles_jail(self):
         g, (a, b, c) = new_game()
         g.decks["chest"] = [1] + [i for i in g.decks["chest"] if i != 1]  # bank error, harmless

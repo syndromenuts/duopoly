@@ -75,7 +75,7 @@ function connect() {
       // new state (cash, owners, log...) lands once the animation finishes.
       const before = held || S;
       held = next;
-      S = { ...before, dice: next.dice, doubles: next.doubles, roll_id: next.roll_id, moves: next.moves, drawn: next.drawn };
+      S = { ...before, dice: next.dice, dice_from: next.dice_from, doubles: next.doubles, roll_id: next.roll_id, moves: next.moves, drawn: next.drawn };
       animateDice();
       animateMoves(next.moves || [], next.drawn.filter((c) => !revealed.has(c.id)), next.flows.filter((f) => !flowsShown.has(f.id)));
       if (animating) render(); // otherwise it was skipped and finishRoll already rendered
@@ -276,7 +276,8 @@ function bindStatic() {
     if (b.dataset.act === "roll") { // the dice or the jail popup's Roll; one roll per click, a refused roll makes the dice clickable again
       setRollable(false);
       const dice = S.dev ? [...$("dev-dice").children].map((el) => (el.value ? Number(el.value) : null)) : null;
-      return send("roll", dice ? { dice } : {}).then((r) => r || render());
+      const from = dice3d?.spots(); // where my dice lie, so everyone's throw starts there and lands alike
+      return send("roll", { ...(dice ? { dice } : {}), ...(from ? { from } : {}) }).then((r) => r || render());
     }
     send(b.dataset.act, data);
   });
@@ -866,7 +867,7 @@ function renderDice() {
 
 function animateDice() {
   if (dice3d) { // thrown for real; with reduced motion they just turn up showing the result
-    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) rollingUntil = Date.now() + dice3d.roll(S.dice || [1, 1], S.roll_id);
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) rollingUntil = Date.now() + dice3d.roll(S.dice || [1, 1], S.roll_id, S.dice_from);
     return;
   }
   // Enlarge the dice while rolling and for a moment after the result lands.
@@ -986,7 +987,7 @@ function applyFlows(flows) {
 }
 
 // Keys the roll on screen plays out itself, so they wait for it to finish.
-const ROLL_KEYS = new Set(["dice", "doubles", "roll_id", "moves", "drawn", "flows", "log", "stage", "turn", "blocked"]);
+const ROLL_KEYS = new Set(["dice", "dice_from", "doubles", "roll_id", "moves", "drawn", "flows", "log", "stage", "turn", "blocked"]);
 
 // Puts what changed since the held state (a house built, a trade, a bid... made while
 // a roll is still playing out) on screen straight away, rather than once the roll ends.
