@@ -34,6 +34,7 @@ let orderBigUntil = {}; // player id -> when their turn-order die shrinks back a
 let orderPending = false; // I clicked my turn-order die and the result hasn't arrived yet
 let orderHoldUntil = 0; // the finished turn order stays up until then, before the board appears
 let lastPhase = null;
+let dice3d = null; // the 3D dice (dice3d.js), once loaded; without WebGL the 2D dice stay
 
 // ------------------------------------------------------------------ server
 
@@ -93,12 +94,56 @@ async function init() {
   BOARD = await (await fetch("/board.json")).json();
   buildBoard();
   bindStatic();
+  await loadDice3d();
   if (token) {
     const r = await fetch("/action", { method: "POST", body: JSON.stringify({ token, type: "whoami" }) });
     if (!r.ok) setIdentity("", "");
   }
   connect();
   setInterval(() => S && renderPlayers(), 5000); // keeps "away" timers fresh
+}
+
+// Swaps the board's 2D dice for 3D ones lying on it. The #dice box stays, unseen, as the keyboard's
+// roll button and the spot the dice start from and are thrown toward.
+async function loadDice3d() {
+  try {
+    const mod = await import("/dice3d.js");
+    mod.init($("board"), { lamp: LAMP, eye: EYE, home: diceHome });
+    dice3d = mod;
+  } catch (e) {
+    console.warn("3D dice unavailable:", e);
+    return;
+  }
+  const board = $("board"), el = $("dice");
+  board.classList.add("dice3d");
+  new MutationObserver(() => dice3d.setState(el.classList.contains("spent") || el.classList.contains("blocked")))
+    .observe(el, { attributes: true, attributeFilter: ["class"] });
+  const rollable = () => !!el.dataset.act;
+  const onDice = (e) => rollable() && !e.target.closest("button, select, input, a") && dice3d.hit(e.clientX, e.clientY);
+  board.addEventListener("pointermove", (e) => {
+    const on = onDice(e);
+    board.classList.toggle("dice-hover", on);
+    dice3d.setHover(on || document.activeElement === el);
+  });
+  board.addEventListener("pointerleave", () => { board.classList.remove("dice-hover"); dice3d.setHover(document.activeElement === el); });
+  board.addEventListener("click", (e) => { // a click on a die rolls, rather than opening the square under it
+    if (e.target === el || !onDice(e)) return;
+    e.stopPropagation();
+    board.classList.remove("dice-hover");
+    el.click();
+  }, true);
+  el.addEventListener("focus", () => dice3d.setHover(rollable()));
+  el.addEventListener("blur", () => dice3d.setHover(false));
+}
+
+// Where each die starts, in board widths: over the 2D dice's places.
+function diceHome() {
+  const b = $("board").getBoundingClientRect();
+  if (!b.width) return null;
+  return [...$("dice").children].map((d) => {
+    const r = d.getBoundingClientRect();
+    return [(r.left + r.width / 2 - b.left) / b.width, (r.top + r.height / 2 - b.top) / b.width];
+  });
 }
 
 function setIdentity(t, id) {
@@ -321,6 +366,8 @@ function foldBoard() {
   const board = $("board");
   board.className = "folded";
   board.style.opacity = board.style.clipPath = board.style.transform = "";
+  dice3d?.setLamp(0);
+  dice3d?.reset();
 }
 
 // ------------------------------------------------------------------ lamplight
@@ -443,6 +490,7 @@ function lightBoard() {
     }
   }
   ctx.putImageData(img, 0, 0);
+  dice3d?.resize();
 }
 addEventListener("resize", () => {
   clearTimeout(lightBoard.timer);
@@ -462,6 +510,18 @@ function flickerLamp() {
   let t = 0;
   for (const [lvl, hold] of LAMP_FLICKER) { t += SNAP; steps.push([t, lvl]); t += hold; steps.push([t, lvl]); }
   const total = t;
+  if (dice3d) { // the dice are lit by the same lamp, so they flicker on with it
+    const start = performance.now();
+    const tick = (now) => {
+      const ms = now - start;
+      const k = steps.findIndex(([at]) => at > ms);
+      if (k < 0) return dice3d.setLamp(1);
+      const [[t0, l0], [t1, l1]] = [steps[k - 1], steps[k]];
+      dice3d.setLamp(l0 + ((l1 - l0) * (ms - t0)) / (t1 - t0));
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
   const frames = (f) => steps.map(([ms, lvl]) => ({ offset: ms / total, opacity: f(lvl) }));
   const on = frames((l) => l), off = frames((l) => 1 - l);
   const board = $("board");
@@ -481,6 +541,7 @@ async function unfoldBoard(instant = false) {
       requestAnimationFrame(() => requestAnimationFrame(() => board.classList.remove("no-anim")));
     }
     board.classList.add("lit");
+    dice3d?.setLamp(1);
     if (!instant && !document.hidden) board.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
     return;
   }
@@ -772,6 +833,7 @@ function setDie(die, v) {
 }
 
 function setDice(a, b) {
+  if (dice3d) return dice3d.show([a, b]);
   [a, b].forEach((v, k) => {
     const die = $("dice").children[k];
     die.hidden = !v;
@@ -783,6 +845,7 @@ function setDice(a, b) {
 function setRollable(on) {
   const el = $("dice");
   el.classList.toggle("ready", on);
+  dice3d?.setReady(on);
   $("dev-dice").hidden = !(on && S.dev);
   if (on) {
     el.dataset.act = "roll";
@@ -802,6 +865,10 @@ function renderDice() {
 }
 
 function animateDice() {
+  if (dice3d) { // thrown for real; with reduced motion they just turn up showing the result
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) rollingUntil = Date.now() + dice3d.roll(S.dice || [1, 1], S.roll_id);
+    return;
+  }
   // Enlarge the dice while rolling and for a moment after the result lands.
   const el = $("dice");
   el.classList.add("big");

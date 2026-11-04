@@ -288,6 +288,15 @@ html:has(#game:not([hidden])) { scrollbar-gutter: stable; } /* the scroll bar co
 #status .notice { text-align: left; color: var(--fg); }
 #status .hint { margin: 4px 0; }
 #center .dice.spent .die, #center .dice.blocked .die { filter: grayscale(1) brightness(.7); opacity: .45; }
+/* The 3D dice (dice3d.js) lie on the board in a canvas over it, under the lamp's shade like the board itself.
+   The 2D dice keep their place, unseen, as the keyboard's roll button; clicks reach the 3D dice by raycast.
+   End turn and notices that hold the game up sit over them. */
+#dice3d { position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); z-index: 4; pointer-events: none; transition: filter .3s, opacity .3s; }
+#dice3d.dim { filter: grayscale(1) brightness(.7); opacity: .45; }
+#board.dice3d #dice-box { z-index: 5; }
+#board.dice3d #center .dice { pointer-events: none; }
+#board.dice3d #center .dice .die { visibility: hidden; animation: none; }
+#board.dice-hover, #board.dice-hover * { cursor: pointer; }
 /* Notices that hold the game up sit over the dice, which grey out beneath them. */
 #dice-block { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; width: calc(var(--B) * .55);
   font-size: clamp(12px, 1.6vw, 15px); }
