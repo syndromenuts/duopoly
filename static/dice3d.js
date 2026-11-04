@@ -6,6 +6,7 @@
 // to suit: see roll().
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/RoundedBoxGeometry.js";
+import { RoomEnvironment } from "three/addons/RoomEnvironment.js";
 import { SIZE, FACES, LAUNCH, GRAVITY, throwDice } from "./dicephysics.js";
 
 THREE.ColorManagement.enabled = false; // light the board's colors as they are, as the lamp shader does
@@ -22,29 +23,56 @@ let run = null; // the throw being played back
 let frameReq = 0;
 const dice = [];
 
-// Faces: ivory with dark round pips, laid out like the 2D dice. The bump map sinks the pips in.
-function faceTexture(v, bump) {
-  const n = 256, c = document.createElement("canvas");
-  c.width = c.height = n;
-  const g = c.getContext("2d");
-  g.fillStyle = bump ? "#fff" : "#f3f0e6";
-  g.fillRect(0, 0, n, n);
-  for (const i of PIPS[v]) {
-    const x = n * (0.25 + 0.25 * (i % 3)), y = n * (0.25 + 0.25 * Math.floor(i / 3)), r = n * 0.085;
-    if (bump) {
-      const grad = g.createRadialGradient(x, y, r * 0.3, x, y, r * 1.08);
-      grad.addColorStop(0, "#000");
-      grad.addColorStop(0.85, "#333");
-      grad.addColorStop(1, "#fff");
-      g.fillStyle = grad;
-    } else g.fillStyle = "#1e1c1a";
-    g.beginPath();
-    g.arc(x, y, bump ? r * 1.08 : r, 0, 2 * Math.PI);
-    g.fill();
+// Faces, drawn per pixel: a warm ivory with a faint mottle and grain, so it doesn't read as flat CG
+// plastic, and pips drilled in as shallow round dimples and filled with dark paint. Each face gets a
+// color map and a matching normal map (the dimples' slopes, plus a fine tooth over the whole face).
+const TEX = 256, PIP_R = 0.088, PIP_DEPTH = 0.55; // pip radius in face widths; dimple depth in pip radii
+function hash(x, y) { const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return h - Math.floor(h); }
+function smooth(x, y) { // value noise
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+  const a = hash(ix, iy), b = hash(ix + 1, iy), c = hash(ix, iy + 1), d = hash(ix + 1, iy + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function faceMaps(v) {
+  const n = TEX, col = new ImageData(n, n), nrm = new ImageData(n, n);
+  const pips = PIPS[v].map((i) => [0.25 + 0.25 * (i % 3), 0.25 + 0.25 * Math.floor(i / 3)]);
+  const seed = v * 17.3;
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const u = (x + 0.5) / n, w = (y + 0.5) / n, k = (y * n + x) * 4;
+      // Surface: a soft mottle, and grain fine enough to only catch the light.
+      const mottle = smooth(u * 6 + seed, w * 6) - 0.5, grain = hash(x + seed * 31, y) - 0.5;
+      let r = 232 + mottle * 9 + grain * 4, g = 226 + mottle * 8 + grain * 4, b = 210 + mottle * 7 + grain * 4;
+      let nx = (hash(x + 1 + seed, y) - hash(x - 1 + seed, y)) * 0.06, ny = (hash(x + seed, y + 1) - hash(x + seed, y - 1)) * 0.06;
+      for (const [px, py] of pips) {
+        const dx = (u - px) / PIP_R, dy = (w - py) / PIP_R, d2 = dx * dx + dy * dy;
+        if (d2 >= 1.15) continue;
+        if (d2 < 1) { // in the dimple: a spherical cap's slope, and paint darkest in the middle
+          const h = Math.sqrt(1 - d2 * (1 - PIP_DEPTH * PIP_DEPTH)) ;
+          nx += dx * PIP_DEPTH / h * 0.9; ny += dy * PIP_DEPTH / h * 0.9;
+          const t = Math.sqrt(d2), paint = 18 + t * t * 22 + grain * 6;
+          r = paint + 2; g = paint; b = paint - 2;
+        } else { // the lip, a hair worn and shadowed
+          const t = (Math.sqrt(d2) - 1) / (Math.sqrt(1.15) - 1);
+          const dark = 0.82 + 0.18 * t;
+          r *= dark; g *= dark; b *= dark;
+        }
+      }
+      col.data[k] = r; col.data[k + 1] = g; col.data[k + 2] = b; col.data[k + 3] = 255;
+      const len = Math.sqrt(nx * nx + ny * ny + 1);
+      // Tangent space: canvas y runs down the texture, three's v up it.
+      nrm.data[k] = 128 + (-nx / len) * 127; nrm.data[k + 1] = 128 + (ny / len) * 127; nrm.data[k + 2] = 128 + (1 / len) * 127; nrm.data[k + 3] = 255;
+    }
   }
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 4;
-  return t;
+  const tex = (img) => {
+    const c = document.createElement("canvas");
+    c.width = c.height = n;
+    c.getContext("2d").putImageData(img, 0, 0);
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = 4;
+    return t;
+  };
+  return { map: tex(col), normalMap: tex(nrm) };
 }
 
 function blobTexture() { // the soft dark patch right under a die where the room light can't reach
@@ -120,12 +148,15 @@ export function init(board, { lamp: L, eye: E, home: homeFn }) {
   scene.add(catcher);
 
   const geo = new RoundedBoxGeometry(SIZE, SIZE, SIZE, 4, SIZE * 0.16);
+  // A dim room around the table, for the soft reflections that make the rounded edges read as solid.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmrem.dispose();
   mats = ORDER.map((v) => {
-    const map = faceTexture(v, false);
-    return new THREE.MeshPhysicalMaterial({
-      // Satin rather than glassy: three's lamp is a point, and a sharp highlight from it would
-      // wash out a whole face where the board's real-sized lamp lights only a spot.
-      map, bumpMap: faceTexture(v, true), bumpScale: 0.6, roughness: 0.5, specularIntensity: 0.5, clearcoat: 0.25, clearcoatRoughness: 0.45,
+    const { map, normalMap } = faceMaps(v);
+    return new THREE.MeshStandardMaterial({
+      // Matte, like worn resin dice: a glossier finish catches three's point lamp as a hard sheen.
+      map, normalMap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.72, metalness: 0,
       emissive: 0xf6c90e, emissiveMap: map, emissiveIntensity: 0,
     });
   });
@@ -295,7 +326,8 @@ export function setLamp(level) {
   const warm = new THREE.Color(1, 0.95, 0.88).multiplyScalar(0.15);
   ambient.color.setRGB(1, 1, 1).lerp(warm, level);
   lamp.intensity = lamp.userData.full * level;
-  bounce.intensity = 0.3 * Math.PI * level;
+  bounce.intensity = 0.6 * Math.PI * level;
+  scene.environmentIntensity = 0.12 * level;
   catcher.material.opacity = 0.62 * level;
   draw();
 }
