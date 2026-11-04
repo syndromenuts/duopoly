@@ -365,7 +365,7 @@ function foldBoard() {
   unfoldBoard.run = null;
   document.querySelectorAll(".fold-layer").forEach((e) => e.remove());
   const board = $("board");
-  board.className = "folded";
+  board.className = dice3d ? "folded dice3d" : "folded"; // the 3D dice stay, hiding the 2D ones
   board.style.opacity = board.style.clipPath = board.style.transform = "";
   dice3d?.setLamp(0);
   dice3d?.reset();
