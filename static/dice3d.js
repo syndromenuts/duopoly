@@ -18,7 +18,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 const AIM = [0.5, 0.48]; // where throws head, about where the 2D dice sat; fixed, so it's the same on every screen
 
 let renderer, scene, camera, canvas, boardEl, ambient, lamp, bounce, catcher, home;
-let lampLevel = 0, ready = false, hover = false, hoverAmt = 0, mats = [];
+let lampLevel = 0, ready = false, hover = false, hoverAmt = 0, glowLevel = 0, mats = [];
 let run = null; // the throw being played back
 let frameReq = 0;
 const dice = [];
@@ -73,6 +73,23 @@ function faceMaps(v) {
     return t;
   };
   return { map: tex(col), normalMap: tex(nrm) };
+}
+
+// The glow around a die you can click: a rounded square the die's size, blurred out past its edges.
+const HALO = 0x1e7bff, HALO_SPAN = 3.4; // a vivid blue, which neither the ivory dice nor the pale board share; the plane's size in die edges
+function haloTexture() {
+  const n = 256, c = document.createElement("canvas");
+  c.width = c.height = n;
+  const g = c.getContext("2d"), core = n / HALO_SPAN, at = (n - core) / 2;
+  g.shadowColor = "#fff";
+  g.fillStyle = "#fff";
+  for (const blur of [6, 6, 14, 14, 30, 50]) { // stacked, so it's solid at the edge and fades slowly
+    g.shadowBlur = blur;
+    g.beginPath();
+    g.roundRect(at, at, core, core, core * 0.18);
+    g.fill();
+  }
+  return new THREE.CanvasTexture(c);
 }
 
 function blobTexture() { // the soft dark patch right under a die where the room light can't reach
@@ -157,10 +174,10 @@ export function init(board, { lamp: L, eye: E, home: homeFn }) {
     return new THREE.MeshStandardMaterial({
       // Matte, like worn resin dice: a glossier finish catches three's point lamp as a hard sheen.
       map, normalMap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.72, metalness: 0,
-      emissive: 0xf6c90e, emissiveMap: map, emissiveIntensity: 0,
+      emissive: HALO, emissiveMap: map, emissiveIntensity: 0, // clickable dice shine blue all over; the dark pips stay dark
     });
   });
-  const blobTex = blobTexture();
+  const blobTex = blobTexture(), haloTex = haloTexture();
   for (let i = 0; i < 2; i++) {
     const group = new THREE.Group(), mesh = new THREE.Mesh(geo, mats);
     mesh.castShadow = mesh.receiveShadow = true;
@@ -168,8 +185,13 @@ export function init(board, { lamp: L, eye: E, home: homeFn }) {
     const blob = new THREE.Mesh(new THREE.PlaneGeometry(SIZE * 1.7, SIZE * 1.7), new THREE.MeshBasicMaterial({ map: blobTex, color: 0, transparent: true, depthWrite: false, opacity: 0.35 }));
     blob.rotation.x = -Math.PI / 2;
     blob.renderOrder = -1;
-    scene.add(group, blob);
-    dice.push({ group, mesh, blob, value: 0, placed: false });
+    const halo = new THREE.Group(), glow = new THREE.Mesh(new THREE.PlaneGeometry(SIZE * HALO_SPAN, SIZE * HALO_SPAN), new THREE.MeshBasicMaterial({ map: haloTex, color: HALO, transparent: true, depthWrite: false, opacity: 0 }));
+    glow.rotation.x = -Math.PI / 2;
+    glow.renderOrder = -1;
+    halo.add(glow);
+    halo.visible = false;
+    scene.add(group, blob, halo);
+    dice.push({ group, mesh, blob, halo, value: 0, placed: false });
   }
   setLamp(0);
   resize();
@@ -301,8 +323,10 @@ function frame(now) {
   if (run) { play((now - run.t0) / 1000); more = !!run; }
   const lift = ready && hover && !run ? 1 : 0;
   if (Math.abs(hoverAmt - lift) > 0.001) { hoverAmt += (lift - hoverAmt) * 0.25; more = true; } else hoverAmt = lift;
-  const glow = ready && !run ? 0.5 - 0.5 * Math.cos((now / 1400) * 2 * Math.PI) : 0; // the 2D dice's 1.4s golden pulse
-  for (const m of mats) m.emissiveIntensity = glow * 0.32;
+  const pulse = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 0.5 - 0.5 * Math.cos((now / 1400) * 2 * Math.PI); // the 2D dice's 1.4s pulse
+  glowLevel = ready && !run ? 0.7 + 0.3 * Math.max(pulse, hoverAmt) : 0; // steady and full while hovered
+  // Tinted blue, and glowing blue on top: the glow alone vanishes on the brightly lit top faces.
+  for (const m of mats) { m.color.setRGB(1 - 0.55 * glowLevel, 1 - 0.3 * glowLevel, 1); m.emissiveIntensity = glowLevel * 0.4; }
   if (ready) more = true;
   draw();
   if (more) loop();
@@ -316,8 +340,26 @@ function draw() {
     d.blob.position.set(d.group.position.x, 0.0004, d.group.position.z);
     d.blob.visible = d.group.visible;
     d.blob.material.opacity = 0.32 * Math.max(0, 1 - (y - REST_Y) / (SIZE * 1.5));
+    d.halo.visible = d.group.visible && glowLevel > 0;
+    if (d.halo.visible) {
+      d.halo.position.set(d.group.position.x, 0.0006, d.group.position.z);
+      d.halo.rotation.y = yaw(d);
+      d.halo.children[0].material.opacity = glowLevel;
+    }
   }
   renderer.render(scene, camera);
+}
+
+// How far a lying die is turned about the vertical, from whichever of its edges lies flat.
+const _q = new THREE.Quaternion();
+function yaw(d) {
+  _q.copy(d.group.quaternion).multiply(d.mesh.quaternion);
+  let best = null;
+  for (const axis of [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) {
+    const v = new THREE.Vector3(...axis).applyQuaternion(_q);
+    if (!best || Math.abs(v.y) < Math.abs(best.y)) best = v;
+  }
+  return Math.atan2(-best.z, best.x);
 }
 
 // The lamp's brightness, 0 (off: the board is drawn unlit, so the dice are too) to 1 (on).

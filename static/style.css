@@ -273,12 +273,12 @@ html:has(#game:not([hidden])) { scrollbar-gutter: stable; } /* the scroll bar co
 #center .dice.ready:hover .die, #center .dice.ready:focus-visible .die { transform: scale(1.08); }
 #center .dice:focus-visible { outline: none; }
 @keyframes dice-ready {
-  0%, 100% { box-shadow: 0 .05em .12em rgba(0,0,0,.35), inset 0 -.03em .05em rgba(0,0,0,.12), 0 0 0 0 rgba(246,201,14,0); }
-  50% { box-shadow: 0 .05em .12em rgba(0,0,0,.35), inset 0 -.03em .05em rgba(0,0,0,.12), 0 0 .12em .06em rgba(246,201,14,.9); }
+  0%, 100% { box-shadow: 0 .05em .12em rgba(0,0,0,.35), inset 0 -.03em .05em rgba(0,0,0,.12), 0 0 .06em .03em rgba(30,123,255,.45); }
+  50% { box-shadow: 0 .05em .12em rgba(0,0,0,.35), inset 0 -.03em .05em rgba(0,0,0,.12), 0 0 .14em .07em rgba(30,123,255,.95); }
 }
 @media (prefers-reduced-motion: reduce) {
   #center .dice { transition: none; }
-  #center .dice.ready .die { animation: none; box-shadow: 0 .05em .12em rgba(0,0,0,.35), 0 0 .1em .05em rgba(246,201,14,.9); }
+  #center .dice.ready .die { animation: none; box-shadow: 0 .05em .12em rgba(0,0,0,.35), 0 0 .1em .05em rgba(30,123,255,.9); }
 }
 #dev-dice { display: flex; gap: 6px; margin: -6px 0 10px; }
 #dev-dice[hidden] { display: none; }
