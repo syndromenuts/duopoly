@@ -20,7 +20,7 @@ def check_invariants(g):
     held = [h for h in g.houses.values() if h]
     assert g.bank_houses + sum(h for h in held if h < 5) == 32, "house count mismatch"
     assert g.bank_hotels + sum(1 for h in held if h == 5) == 12, "hotel count mismatch"
-    for pos, owner in g.owners.items():
+    for owner in g.owners.values():
         assert not g.players[owner].bankrupt, "bankrupt player owns property"
     for group, members in GROUPS.items():
         hs = [g.houses.get(q, 0) for q in members]
@@ -48,10 +48,7 @@ def raise_funds(g, rng, p):
             return True
         if g.houses.get(pos) and try_act(g, p, "sell_all", pos=pos):
             return True
-    for pos in mine:
-        if try_act(g, p, "mortgage", pos=pos):
-            return True
-    return False
+    return any(try_act(g, p, "mortgage", pos=pos) for pos in mine)
 
 
 def step(g, rng):

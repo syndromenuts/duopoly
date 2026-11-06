@@ -1,0 +1,15 @@
+{
+  "name": "duopoly",
+  "private": true,
+  "description": "Dev tooling only: linting the browser code. Nothing here is needed to run the game.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0"
+  }
+}

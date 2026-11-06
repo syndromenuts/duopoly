@@ -1,4 +1,5 @@
 """HTTP server: static files, Server-Sent Events for state, JSON POST for actions."""
+import contextlib
 import json
 import os
 import queue
@@ -124,10 +125,8 @@ def main():
     signal.signal(signal.SIGTERM, signal.default_int_handler)
     threading.Thread(target=refresh_yen, daemon=True).start()
     print(f"Duopoly running on http://0.0.0.0:{port}{' (dev mode)' if GAME.dev else ''}", flush=True)
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         server.serve_forever()
-    except KeyboardInterrupt:
-        pass
 
 
 if __name__ == "__main__":

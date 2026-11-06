@@ -29,8 +29,8 @@ let shownCenter = null; // markup last put in the center info
 let revealed = null; // ids of drawn cards that have reached their deck (null until the first state)
 let flowsShown = null; // ids of cash movements already shown in the middle of the board
 let orderShown = {}; // player id -> whether their turn-order roll is on screen; a new one rolls first
-let orderRollUntil = {}; // player id -> when their turn-order die stops tumbling
-let orderBigUntil = {}; // player id -> when their turn-order die shrinks back after a roll
+const orderRollUntil = {}; // player id -> when their turn-order die stops tumbling
+const orderBigUntil = {}; // player id -> when their turn-order die shrinks back after a roll
 let orderPending = false; // I clicked my turn-order die and the result hasn't arrived yet
 let orderHoldUntil = 0; // the finished turn order stays up until then, before the board appears
 let lastPhase = null;
@@ -1269,7 +1269,7 @@ function renderOffer() {
   // Only a new one, so the counter draft opened over the offer it rejects isn't closed by a stale render.
   if (t.id !== seenTrade && tradeDraft) closeTrade();
   seenTrade = t.id;
-  let title, view, acts = "";
+  let title, view, acts;
   if (t.to === myId) { // the proposer's form seen from this side: what you'd give on the left, what you'd get on the right
     title = "Trade offer";
     view = tradeView([myId, "get", t.get], [t.from, "give", t.give], false);

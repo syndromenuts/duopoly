@@ -18,7 +18,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 const AIM = [0.5, 0.48]; // where throws head, about where the 2D dice sat; fixed, so it's the same on every screen
 
 let renderer, scene, camera, canvas, boardEl, ambient, lamp, bounce, catcher, home;
-let lampLevel = 0, ready = false, hover = false, hoverAmt = 0, bob = 0, glowLevel = 0, mats = [];
+let ready = false, hover = false, hoverAmt = 0, bob = 0, glowLevel = 0, mats = [];
 let run = null; // the throw being played back
 let frameReq = 0;
 const dice = [];
@@ -373,7 +373,6 @@ function yaw(d) {
 
 // The lamp's brightness, 0 (off: the board is drawn unlit, so the dice are too) to 1 (on).
 export function setLamp(level) {
-  lampLevel = level;
   const warm = new THREE.Color(1, 0.95, 0.88).multiplyScalar(0.15);
   ambient.color.setRGB(1, 1, 1).lerp(warm, level);
   lamp.intensity = lamp.userData.full * level;

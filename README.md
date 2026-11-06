@@ -56,3 +56,12 @@ podman run -d --name duopoly -p 8000:8000 duopoly
 python3 -m unittest discover -s tests   # rules
 python3 tests/simulate.py 300           # bots play 300 full games, checking invariants
 ```
+
+## Lint
+
+```sh
+pipx run ruff check .     # Python (config in ruff.toml)
+npm ci && npm run lint    # JavaScript, with ESLint (dev only; the game itself needs no Node)
+```
+
+CI runs both, plus the tests and a 50-game simulation, before publishing the image.

@@ -137,7 +137,7 @@ class Game:
         order = list(self.players)
         self.rng.shuffle(order)
         totals = sorted(self.rng.sample(range(2, 13), len(order)), reverse=True)
-        for pid, total in zip(order, totals):
+        for pid, total in zip(order, totals, strict=True):
             d1 = self.rng.randint(max(1, total - 6), min(6, total - 1))
             self.order_plan[pid] = [d1, total - d1]
         self.say("Roll the dice for turn order. Highest goes first.")
@@ -402,7 +402,7 @@ class Game:
             if not isinstance(chosen, list) or len(chosen) != 2 or \
                     any(d is not None and (type(d) is not int or not 1 <= d <= 6) for d in chosen):
                 raise GameError("Dice must be two values from 1 to 6.")
-            d1, d2 = (d if d is not None else r for d, r in zip(chosen, (d1, d2)))
+            d1, d2 = (d if d is not None else r for d, r in zip(chosen, (d1, d2), strict=True))
         self.dice = [d1, d2]
         self.dice_from = self.parse_dice_from(data.get("from"))
         self.roll_id += 1

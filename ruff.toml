@@ -1,0 +1,7 @@
+target-version = "py310"
+line-length = 120
+
+[lint]
+# pyflakes, pycodestyle, bugbear, pyupgrade, simplify
+select = ["F", "E", "W", "B", "UP", "SIM"]
+ignore = ["E501"]  # long lines are fine here; the formatter isn't used
