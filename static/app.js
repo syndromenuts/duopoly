@@ -34,6 +34,7 @@ const orderBigUntil = {}; // player id -> when their turn-order die shrinks back
 let orderPending = false; // I clicked my turn-order die and the result hasn't arrived yet
 let orderHoldUntil = 0; // the finished turn order stays up until then, before the board appears
 let lastPhase = null;
+let pawns = null; // the 3D pawns (pawn3d.js), once loaded; without WebGL the tokens stay flat dots
 let dice3d = null; // the 3D dice (dice3d.js), once loaded; without WebGL the 2D dice stay
 
 // ------------------------------------------------------------------ server
@@ -94,13 +95,32 @@ async function init() {
   BOARD = await (await fetch("/board.json")).json();
   buildBoard();
   bindStatic();
-  await loadDice3d();
+  await Promise.all([loadDice3d(), loadPawns()]);
   if (token) {
     const r = await fetch("/action", { method: "POST", body: JSON.stringify({ token, type: "whoami" }) });
     if (!r.ok) setIdentity("", "");
   }
   connect();
   setInterval(() => S && renderPlayers(), 5000); // keeps "away" timers fresh
+}
+
+// Stands the players up on the board as pawns, in place of the flat dots.
+async function loadPawns() {
+  try {
+    const mod = await import("/pawn3d.js");
+    mod.sprite("#888"); // fails here, rather than mid-render, without WebGL
+    pawns = mod;
+  } catch (e) {
+    console.warn("3D pawns unavailable:", e);
+    return;
+  }
+  if (S) render();
+}
+
+// A player's piece on the board: a pawn when they can be drawn, else a dot. Extra style places it.
+function tokenHtml(p, style = "") {
+  const look = pawns ? `background-image:url(${pawns.sprite(p.color)})` : `background:${p.color}`;
+  return `<span class="dot${pawns ? " pawn" : ""}" style="${look};${style}" title="${esc(p.name)}"></span>`;
 }
 
 // Swaps the board's 2D dice for 3D ones lying on it. The #dice box stays, unseen, as the keyboard's
@@ -727,7 +747,7 @@ function inmateDots(jailed) {
     rows.push(jailed.slice(i, i += k));
   }
   return rows.map((row, r) => row.map((p, j) =>
-    `<span class="dot" style="background:${p.color};left:${JAIL_SLOTS[row.length - 1][j]}%;top:${JAIL_ROWS[nRows - 1][r]}%" title="${esc(p.name)}"></span>`
+    tokenHtml(p, `left:${JAIL_SLOTS[row.length - 1][j]}%;top:${JAIL_ROWS[nRows - 1][r]}%`)
   ).join("")).join("");
 }
 
@@ -751,7 +771,7 @@ function renderBoard() {
     if (sp.price) html += `<div class="pr">$${sp.price}</div>`;
     if (sp.type === "tax") html += `<div class="pr">pay $${sp.amount}</div>`;
     if (i === 20 && S.rules.free_parking) html += `<div class="pr">Pot $${S.pot}</div>`;
-    html += `<div class="toks">${here.filter((p) => !p.in_jail).map((p) => `<span class="dot" style="background:${p.color}" title="${esc(p.name)}"></span>`).join("")}</div>`;
+    html += `<div class="toks">${here.filter((p) => !p.in_jail).map((p) => tokenHtml(p)).join("")}</div>`;
     if (owner) html += `<div class="owner" style="background:${player(owner).color}"></div>`;
     c.innerHTML = html;
     c.classList.toggle("mort", isMortgaged(i));
@@ -920,7 +940,9 @@ async function animateMoves(moves, cards = [], flows = []) {
   }
   const pending = [...cards];
   moving = pid;
-  tok.style.background = player(pid)?.color || "#888";
+  const color = player(pid)?.color || "#888";
+  tok.classList.toggle("pawn", !!pawns);
+  tok.style.background = pawns ? `url(${pawns.sprite(color)}) center / contain no-repeat` : color;
   const place = ([x, y]) => (tok.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`);
   place(cellCenter(moves[0].from));
   tok.hidden = false;

@@ -5,12 +5,12 @@ export default [
   { ignores: ["static/vendor/", "node_modules/"] },
   js.configs.recommended,
   {
-    // app.js is a classic script; the dice are ES modules it imports.
+    // app.js is a classic script; the dice and pawns are ES modules it imports.
     files: ["static/app.js"],
     languageOptions: { sourceType: "script", globals: globals.browser },
   },
   {
-    files: ["static/dice3d.js", "static/dicephysics.js"],
+    files: ["static/dice3d.js", "static/dicephysics.js", "static/pawn3d.js"],
     languageOptions: { sourceType: "module", globals: globals.browser },
   },
   {

@@ -259,6 +259,12 @@ html:has(#game:not([hidden])) { scrollbar-gutter: stable; } /* the scroll bar co
 #mover { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; width: clamp(14px, 2.4vw, 26px); height: clamp(14px, 2.4vw, 26px);
   border: 3px solid #1a1a1a; box-sizing: border-box; box-shadow: 0 3px 8px rgba(0,0,0,.45), 0 0 12px 3px rgba(246,201,14,.8); }
 #mover[hidden] { display: none; }
+/* 3D pawns (pawn3d.js): a picture of the piece standing on the board, outlined so it shows on any square, with its shadow cast forward */
+.cell .dot.pawn, #mover.pawn { border: 0; border-radius: 0; box-shadow: none; background-position: center; background-size: contain; background-repeat: no-repeat;
+  aspect-ratio: .68; height: auto; filter: drop-shadow(0 0 .6px #1a1a1a) drop-shadow(0 0 .6px #1a1a1a) drop-shadow(1px 2px 2px rgba(0,0,0,.5)); }
+.cell .toks .dot.pawn, .cell .inmates .dot.pawn { width: clamp(11px, 1.6vw, 17px); margin: 0 -1px; }
+#mover.pawn { width: clamp(13px, 1.9vw, 20px);
+  filter: drop-shadow(0 0 .6px #1a1a1a) drop-shadow(0 0 .6px #1a1a1a) drop-shadow(1px 4px 3px rgba(0,0,0,.45)) drop-shadow(0 0 6px rgba(246,201,14,.85)); }
 #center { grid-column: 2 / 11; grid-row: 2 / 11; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px; color: var(--cell-fg); }
 #center .dice { display: flex; justify-content: center; gap: .2em; font-size: clamp(30px, 6vw, 64px); height: 1em; margin: 8px 0 14px; transition: font-size .2s ease-out; }
 #center .dice.big { font-size: clamp(60px, 13vw, 140px); }
