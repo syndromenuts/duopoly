@@ -34,7 +34,7 @@ const orderBigUntil = {}; // player id -> when their turn-order die shrinks back
 let orderPending = false; // I clicked my turn-order die and the result hasn't arrived yet
 let orderHoldUntil = 0; // the finished turn order stays up until then, before the board appears
 let lastPhase = null;
-let pawns = null; // the 3D pawns (pawn3d.js), once loaded; without WebGL the tokens stay flat dots
+let mover3d = null; // where the moving pawn is, {pid, x, y, h} in board pixels, while it hops in 3D
 let dice3d = null; // the 3D dice (dice3d.js), once loaded; without WebGL the 2D dice stay
 
 // ------------------------------------------------------------------ server
@@ -95,7 +95,7 @@ async function init() {
   BOARD = await (await fetch("/board.json")).json();
   buildBoard();
   bindStatic();
-  await Promise.all([loadDice3d(), loadPawns()]);
+  await loadDice3d();
   if (token) {
     const r = await fetch("/action", { method: "POST", body: JSON.stringify({ token, type: "whoami" }) });
     if (!r.ok) setIdentity("", "");
@@ -104,23 +104,31 @@ async function init() {
   setInterval(() => S && renderPlayers(), 5000); // keeps "away" timers fresh
 }
 
-// Stands the players up on the board as pawns, in place of the flat dots.
-async function loadPawns() {
-  try {
-    const mod = await import("/pawn3d.js");
-    mod.sprite("#888"); // fails here, rather than mid-render, without WebGL
-    pawns = mod;
-  } catch (e) {
-    console.warn("3D pawns unavailable:", e);
-    return;
-  }
-  if (S) render();
+// A player's piece on the board: a dot, or with the 3D scene, an unseen spot that keeps the squares'
+// layout (and the name on hover) for a pawn to stand on. Extra style places it.
+function tokenHtml(p, style = "") {
+  if (!dice3d) return `<span class="dot" style="background:${p.color};${style}" title="${esc(p.name)}"></span>`;
+  return `<span class="dot pawn" data-pid="${p.id}" style="${style}" title="${esc(p.name)}"></span>`;
 }
 
-// A player's piece on the board: a pawn when they can be drawn, else a dot. Extra style places it.
-function tokenHtml(p, style = "") {
-  const look = pawns ? `background-image:url(${pawns.sprite(p.color)})` : `background:${p.color}`;
-  return `<span class="dot${pawns ? " pawn" : ""}" style="${look};${style}" title="${esc(p.name)}"></span>`;
+// Stands each player's 3D pawn on their spot on the board, and the moving one where its hop has it.
+function syncPawns() {
+  if (!dice3d) return;
+  const board = $("board"), b = board.getBoundingClientRect();
+  if (!b.width || !S) return dice3d.setPawns([]);
+  const W = board.offsetWidth; // the canvas's width, in the board's own (untransformed) pixels
+  const list = [];
+  for (const el of board.querySelectorAll(".dot.pawn")) {
+    const p = player(el.dataset.pid), r = el.getBoundingClientRect();
+    if (!p || !r.width) continue;
+    // Jailed pawns stand a little smaller, to fit behind the bars.
+    list.push({ key: p.id, color: p.color, x: (r.left + r.width / 2 - b.left) / b.width, z: (r.top + r.height / 2 - b.top) / b.height, scale: el.closest(".inmates") ? 0.85 : 1 });
+  }
+  if (mover3d) {
+    const p = player(mover3d.pid), border = (W - board.clientWidth) / 2;
+    if (p) list.push({ key: p.id, color: p.color, x: (mover3d.x + border) / W, z: (mover3d.y + border) / W, y: mover3d.h / W });
+  }
+  dice3d.setPawns(list);
 }
 
 // Swaps the board's 2D dice for 3D ones lying on it. The #dice box stays, unseen, as the keyboard's
@@ -512,6 +520,7 @@ function lightBoard() {
   }
   ctx.putImageData(img, 0, 0);
   dice3d?.resize();
+  syncPawns();
 }
 addEventListener("resize", () => {
   clearTimeout(lightBoard.timer);
@@ -776,6 +785,7 @@ function renderBoard() {
     c.innerHTML = html;
     c.classList.toggle("mort", isMortgaged(i));
   });
+  syncPawns();
   renderDice();
   let center = "";
   if (S.phase === "over") center += `<h2>🏆 ${pname(S.winner)} wins!</h2>${btn("New game", "vote_reset")}`;
@@ -922,6 +932,7 @@ async function animateMoves(moves, cards = [], flows = []) {
   animating = true;
   showCard.back = null;
   const tok = $("mover"), fly = $("flyer");
+  mover3d = null;
   tok.getAnimations().forEach((a) => a.cancel());
   fly.getAnimations().forEach((a) => a.cancel());
   fly.hidden = true;
@@ -940,13 +951,31 @@ async function animateMoves(moves, cards = [], flows = []) {
   }
   const pending = [...cards];
   moving = pid;
-  const color = player(pid)?.color || "#888";
-  tok.classList.toggle("pawn", !!pawns);
-  tok.style.background = pawns ? `url(${pawns.sprite(color)}) center / contain no-repeat` : color;
+  tok.style.background = player(pid)?.color || "#888";
   const place = ([x, y]) => (tok.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`);
   place(cellCenter(moves[0].from));
-  tok.hidden = false;
+  tok.hidden = !!dice3d;
+  if (dice3d) {
+    const [x, y] = cellCenter(moves[0].from);
+    mover3d = { pid, x, y, h: 0 };
+    renderBoard(); // takes their pawn off its square, to stand on the hop's start
+  }
+  // With the 3D scene the pawn really leaves the board, with the 2D token's timing and easing: it runs
+  // straight from square to square and rises and falls on the way, its shadow staying on the board.
+  const hop3d = (a, b, ms, lift) => new Promise((done) => {
+    const t0 = performance.now();
+    const step = (now) => {
+      if (run !== animateMoves.run) return done();
+      const t = Math.min((now - t0) / ms, 1), u = t * t * (3 - 2 * t); // close to CSS ease-in-out
+      mover3d = { pid, x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u, h: lift * Math.sin(Math.PI * u) };
+      syncPawns();
+      if (t < 1) requestAnimationFrame(step);
+      else done();
+    };
+    requestAnimationFrame(step);
+  });
   const hop = (a, b, ms, lift) => {
+    if (dice3d) return hop3d(a, b, ms, lift);
     const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - lift];
     const kf = [a, mid, b].map(([x, y], k) => ({ transform: `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${k === 1 ? 1.35 : 1})` }));
     return tok.animate(kf, { duration: ms, easing: "ease-in-out" }).finished.then(() => place(b), () => {});
@@ -1048,6 +1077,7 @@ function catchUp(prev, next) {
 // Drops the token and catches the screen up with the state held during the roll.
 function finishRoll() {
   moving = null;
+  mover3d = null;
   animating = false;
   $("mover").hidden = true;
   if (held) [S, held] = [held, null];

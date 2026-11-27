@@ -1,4 +1,4 @@
-// The board's two dice as real objects lying on it, drawn by three.js into a canvas laid over the
+// The board's two dice, and the players' pawns, as real objects lying on it, drawn by three.js into a canvas laid over the
 // board. The camera sits where the lamp shader puts the player's eye and looks straight down, so the
 // board plane lands exactly on the board on screen; the lights are the shader's lamp and room light,
 // worked out the same way (in the board's own color space, not linear), so the dice look lit by the
@@ -19,6 +19,7 @@ const AIM = [0.5, 0.48]; // where throws head, about where the 2D dice sat; fixe
 
 let renderer, scene, camera, canvas, boardEl, ambient, lamp, bounce, catcher, home;
 let ready = false, hover = false, hoverAmt = 0, bob = 0, glowLevel = 0, mats = [];
+let dimmed = false, dimAmt = 0, lastFrame = 0; // the dice greyed out while they can't be rolled
 let run = null; // the throw being played back
 let frameReq = 0;
 const dice = [];
@@ -148,7 +149,7 @@ export function init(board, { lamp: L, eye: E, home: homeFn }) {
   lamp.userData.full = 0.72 * L[2] * L[2] * Math.PI; // 0.72 of white right under it, as on the board
   lamp.castShadow = true;
   lamp.shadow.mapSize.set(2048, 2048);
-  lamp.shadow.focus = 0.6; // the shadow map only needs the middle of the board
+  lamp.shadow.focus = 0.75; // the shadow map reaches the board's edges, for the pawns standing there
   lamp.shadow.camera.near = 0.3;
   lamp.shadow.camera.far = 1.5;
   lamp.shadow.bias = -0.0004;
@@ -192,6 +193,8 @@ export function init(board, { lamp: L, eye: E, home: homeFn }) {
     scene.add(group, blob, halo);
     dice.push({ group, mesh, blob, halo, value: 0, placed: false });
   }
+  blobMap = blobTex;
+  pawnGeo = pawnGeometry();
   setLamp(0);
   resize();
 }
@@ -250,6 +253,7 @@ export function spots() {
 export function roll(values, seed, from) {
   const spots = homeSpots();
   dice.forEach((d, i) => { if (!d.placed) lay(d, values[i] || 1, spots[i]); d.group.visible = true; });
+  lastFrame = 0;
   if (run) settle(); // a throw still going lands where it was headed first
   const here = dice.map((d) => d.group.position.toArray());
   const starts = from ? from.map(([x, z]) => [x, REST_Y, z]) : here;
@@ -319,6 +323,14 @@ function loop() {
 function frame(now) {
   frameReq = 0;
   let more = false;
+  const dt = lastFrame ? Math.min(now - lastFrame, 100) : 16;
+  lastFrame = now;
+  // Greyed out and see-through while they can't be rolled, fading over 0.3s.
+  const dimTo = dimmed ? 1 : 0;
+  if (dimAmt !== dimTo) {
+    dimAmt = Math.abs(dimTo - dimAmt) < dt / 300 ? dimTo : dimAmt + Math.sign(dimTo - dimAmt) * (dt / 300);
+    more = true;
+  }
   if (run) { play((now - run.t0) / 1000); more = !!run; }
   const lift = ready && hover && !run ? 1 : 0;
   if (Math.abs(hoverAmt - lift) > 0.001) { hoverAmt += (lift - hoverAmt) * 0.16; more = true; } else hoverAmt = lift;
@@ -328,10 +340,17 @@ function frame(now) {
   if (ready) more = true;
   draw();
   if (more) loop();
+  else lastFrame = 0;
 }
 
 function draw() {
   if (!renderer || !canvas.clientWidth) return;
+  for (const m of mats) {
+    const see = dimAmt > 0;
+    if (m.transparent !== see) { m.transparent = see; m.needsUpdate = true; }
+    m.opacity = 1 - 0.55 * dimAmt;
+    m.color.setScalar(1 - 0.3 * dimAmt);
+  }
   for (const d of dice) {
     // Hovered, a die you can roll rises off the board and floats, bobbing gently. Seen from straight
     // above with the lamp nearly overhead, height alone hardly shows, so it also grows a touch (as
@@ -345,7 +364,7 @@ function draw() {
     d.blob.position.set(d.group.position.x, 0.0004, d.group.position.z);
     d.blob.visible = d.group.visible;
     d.blob.scale.setScalar(1 + (y - REST_Y) / SIZE);
-    d.blob.material.opacity = 0.32 * Math.max(0, 1 - (y - REST_Y) / (SIZE * 1.2));
+    d.blob.material.opacity = 0.32 * Math.max(0, 1 - (y - REST_Y) / (SIZE * 1.2)) * (1 - 0.55 * dimAmt);
     d.halo.visible = d.group.visible && glowLevel > 0;
     if (d.halo.visible) {
       d.halo.position.set(d.group.position.x, 0.0006, d.group.position.z);
@@ -393,7 +412,10 @@ export function setHover(on) {
 }
 
 export function setState(state) {
-  canvas.classList.toggle("dim", !!state);
+  if (dimmed === !!state) return;
+  dimmed = !!state;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) dimAmt = dimmed ? 1 : 0;
+  loop();
 }
 
 export function resize() {
@@ -411,4 +433,72 @@ export function hit(x, y) {
   if (!r.width) return false;
   ray.setFromCamera(new THREE.Vector2(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1), camera);
   return ray.intersectObjects(dice.filter((d) => d.group.visible).map((d) => d.mesh), false).length > 0;
+}
+
+// ------------------------------------------------------------------ pawns
+
+// The players' pieces: a plain turned pawn, a ball on a tapering base, in lacquered wood of the
+// player's colour. They stand in the same scene as the dice, so the same lamp lights them, glints off
+// them and throws their shadows across the squares. Where each stands is up to the page.
+const PAWN_R = 0.0118, HEAD_R = 0.0063, HEAD_Y = 0.0252; // base radius, head radius and height, in board widths
+let pawnGeo = null, blobMap = null;
+const pawns = new Map();
+
+function pawnGeometry() {
+  // The base: a rounded foot, then sides curving in to a slim neck under the head.
+  const pts = [[0, 0], [PAWN_R * 0.93, 0], [PAWN_R, PAWN_R * 0.07], [PAWN_R * 0.99, PAWN_R * 0.2], [PAWN_R * 0.93, PAWN_R * 0.3]];
+  const neckR = PAWN_R * 0.3, neckY = HEAD_Y - HEAD_R * 0.75, y0 = PAWN_R * 0.3;
+  for (let i = 1; i <= 12; i++) {
+    const t = i / 12; // concave, so it flares out at the foot and runs up nearly straight
+    pts.push([neckR + (PAWN_R * 0.93 - neckR) * (1 - t) ** 2.2, y0 + (neckY - y0) * t]);
+  }
+  pts.push([0, neckY]);
+  const base = new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 48);
+  const head = new THREE.SphereGeometry(HEAD_R, 40, 24);
+  head.translate(0, HEAD_Y, 0);
+  return { base, head };
+}
+
+function makePawn() {
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.24, metalness: 0 }); // a glossy lacquer, so the lamp glints off the head
+  const group = new THREE.Group();
+  for (const g of [pawnGeo.base, pawnGeo.head]) {
+    const m = new THREE.Mesh(g, mat);
+    m.castShadow = m.receiveShadow = true;
+    group.add(m);
+  }
+  const blob = new THREE.Mesh(new THREE.PlaneGeometry(PAWN_R * 3.2, PAWN_R * 3.2), new THREE.MeshBasicMaterial({ map: blobMap, color: 0, transparent: true, depthWrite: false }));
+  blob.rotation.x = -Math.PI / 2;
+  blob.renderOrder = -1;
+  scene.add(group, blob);
+  return { group, blob, mat, color: "" };
+}
+
+// Stands the pawns where the list says, each {key, color, x, z, y?, scale?}: x and z across and down
+// the board, y above it, all in board widths. Pawns left off the list are taken away.
+export function setPawns(list) {
+  if (!renderer) return;
+  const seen = new Set();
+  for (const p of list) {
+    seen.add(p.key);
+    let pawn = pawns.get(p.key);
+    if (!pawn) pawns.set(p.key, (pawn = makePawn()));
+    if (pawn.color !== p.color) pawn.mat.color.set((pawn.color = p.color) || "#888");
+    const y = p.y || 0, s = p.scale || 1;
+    pawn.group.position.set(p.x, y, p.z);
+    pawn.group.scale.setScalar(s);
+    // The soft dark patch at its foot spreads and fades as it leaves the board.
+    pawn.blob.position.set(p.x, 0.0003, p.z);
+    pawn.blob.scale.setScalar(s * (1 + y / (PAWN_R * 2)));
+    pawn.blob.material.opacity = 0.4 * Math.max(0, 1 - y / (PAWN_R * 3));
+  }
+  for (const [key, pawn] of pawns) {
+    if (seen.has(key)) continue;
+    scene.remove(pawn.group, pawn.blob);
+    pawn.mat.dispose();
+    pawn.blob.geometry.dispose();
+    pawn.blob.material.dispose();
+    pawns.delete(key);
+  }
+  draw();
 }
