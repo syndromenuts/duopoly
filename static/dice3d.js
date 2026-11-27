@@ -174,7 +174,6 @@ export function init(board, { lamp: L, eye: E, home: homeFn }) {
     return new THREE.MeshStandardMaterial({
       // Matte, like worn resin dice: a glossier finish catches three's point lamp as a hard sheen.
       map, normalMap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.72, metalness: 0,
-      emissive: HALO, emissiveMap: map, emissiveIntensity: 0, // clickable dice shine blue all over; the dark pips stay dark
     });
   });
   const blobTex = blobTexture(), haloTex = haloTexture();
@@ -326,8 +325,6 @@ function frame(now) {
   bob = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : Math.sin((now / 1600) * 2 * Math.PI);
   const pulse = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 0.5 - 0.5 * Math.cos((now / 1400) * 2 * Math.PI); // the 2D dice's 1.4s pulse
   glowLevel = ready && !run ? 0.7 + 0.3 * Math.max(pulse, hoverAmt) : 0; // steady and full while hovered
-  // Tinted blue, and glowing blue on top: the glow alone vanishes on the brightly lit top faces.
-  for (const m of mats) { m.color.setRGB(1 - 0.55 * glowLevel, 1 - 0.3 * glowLevel, 1); m.emissiveIntensity = glowLevel * 0.4; }
   if (ready) more = true;
   draw();
   if (more) loop();
